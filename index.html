@@ -136,6 +136,31 @@
     touch-action: manipulation;
   }
   #nextBtn:active { transform: translateY(2px); }
+  #soundBtn {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 20;
+    display: flex; align-items: center;
+    padding: 10px 20px;
+    border: 2px solid #F5B940;
+    border-radius: 999px;
+    background: linear-gradient(180deg, #FFF3C4, #FFE29A);
+    color: #B45309;
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    box-shadow: 0 4px 12px rgba(224, 123, 0, .25), inset 0 2px 4px rgba(255, 255, 255, .6);
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  #soundBtn:active { transform: translateY(2px); }
+  #soundBtn.off {
+    background: linear-gradient(180deg, #F3E8C9, #E9DCAE);
+    color: #9A7B4F;
+    border-color: #D9C48A;
+    opacity: .85;
+  }
 </style>
 </head>
 <body>
@@ -151,6 +176,7 @@
     </select>
   </div>
 </header>
+<button id="soundBtn" aria-label="音效开关">音效 开</button>
 <div class="status">
   <span id="roundLabel">全部词库 · 第 1 关</span>
   <span id="timer">用时 00:00</span>
@@ -276,6 +302,7 @@ const timerEl = document.getElementById('timer');
 const roundLabel = document.getElementById('roundLabel');
 const nextBtn = document.getElementById('nextBtn');
 const difficultySelect = document.getElementById('difficultySelect');
+const soundBtn = document.getElementById('soundBtn');
 
 let usedIdx = new Set();
 let activeLevel = 'all';
@@ -286,6 +313,7 @@ let matched = 0;
 let startAt = 0;
 let timerId = null;
 let audioCtx = null;
+let soundOn = true;
 
 function shuffle(a) {
   for (let i = a.length - 1; i > 0; i--) {
@@ -388,12 +416,14 @@ function tone(freq, dur, type, vol, when) {
 }
 
 function playSuccess() {
+  if (!soundOn) return;
   tone(523.25, 0.4, 'triangle', 0.3, 0);
   tone(659.25, 0.4, 'triangle', 0.3, 0.12);
   tone(783.99, 0.5, 'triangle', 0.3, 0.24);
 }
 
 function playFail() {
+  if (!soundOn) return;
   const ctx = getCtx();
   const t = ctx.currentTime;
   const o = ctx.createOscillator(), g = ctx.createGain();
@@ -409,6 +439,7 @@ function playFail() {
 }
 
 function playWin() {
+  if (!soundOn) return;
   [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => tone(f, 0.5, 'triangle', 0.3, i * 0.15));
 }
 
@@ -416,6 +447,12 @@ function fmt(ms) {
   const s = Math.floor(ms / 1000);
   const m = Math.floor(s / 60);
   return String(m).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+}
+
+function setSound(on) {
+  soundOn = on;
+  soundBtn.textContent = on ? '音效 开' : '音效 关';
+  soundBtn.classList.toggle('off', !on);
 }
 
 function startTimer() {
@@ -489,6 +526,10 @@ difficultySelect.addEventListener('change', function () {
   roundLabel.textContent = GRADE_LABELS[activeLevel] + ' · 第 1 关';
   overlay.classList.add('hidden');
   buildBoard(pickPairs());
+});
+
+soundBtn.addEventListener('click', function () {
+  setSound(!soundOn);
 });
 
 buildBoard(pickPairs());
