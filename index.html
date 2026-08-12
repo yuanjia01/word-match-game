@@ -25,6 +25,29 @@
     color: #B45309;
     text-shadow: 0 3px 0 #fff, 0 8px 18px rgba(180, 83, 9, .35);
   }
+  .difficulty {
+    display: inline-flex; align-items: center; gap: 10px;
+    margin-top: 12px;
+    padding: 8px 12px 8px 16px;
+    border: 2px solid rgba(180, 83, 9, .2);
+    border-radius: 999px;
+    color: #7C4A03;
+    background: rgba(255, 255, 255, .58);
+    box-shadow: 0 5px 14px rgba(180, 83, 9, .12);
+    font-size: clamp(15px, 1.8vw, 19px);
+    font-weight: 800;
+  }
+  .difficulty select {
+    border: 2px solid #F7B32B;
+    border-radius: 999px;
+    padding: 7px 34px 7px 14px;
+    color: #7C4A03;
+    background: #FFFDF2;
+    font: inherit;
+    cursor: pointer;
+    outline: none;
+  }
+  .difficulty select:focus-visible { box-shadow: 0 0 0 4px rgba(247, 179, 43, .32); }
   .status {
     display: flex; justify-content: space-between; align-items: center;
     width: min(94vw, 1150px);
@@ -141,10 +164,21 @@
 </style>
 </head>
 <body>
-<header><h1>单词消消乐</h1></header>
+<header>
+  <h1>单词消消乐</h1>
+  <div class="difficulty">
+    <label for="difficultySelect">学习难度</label>
+    <select id="difficultySelect">
+      <option value="all" selected>全部</option>
+      <option value="lower">低年级</option>
+      <option value="upper">高年级</option>
+      <option value="middle">初中</option>
+    </select>
+  </div>
+</header>
 <button id="soundBtn" aria-label="音效开关">音效 开</button>
 <div class="status">
-  <span id="roundLabel">第 1 关</span>
+  <span id="roundLabel">全部词库 · 第 1 关</span>
   <span id="timer">用时 00:00</span>
 </div>
 <div class="board" id="board"></div>
@@ -158,7 +192,38 @@
 <script>
 const PALETTE = ['#FF6B6B', '#FF8E53', '#F7B32B', '#4CAF7D', '#4D96FF', '#9B59B6', '#FF8FB1', '#00A8C6', '#F76E11', '#8BC34A', '#845EC2', '#FF9671', '#C34A2C', '#0089BA', '#D65DB1', '#3AB795', '#FF8066', '#5D9CEC', '#E17055', '#74B816'];
 
-const WORDS = [
+const GRADE_LABELS = {
+  all: '全部词库',
+  lower: '低年级',
+  upper: '高年级',
+  middle: '初中'
+};
+
+const GRADE_WORDS = {
+  lower: new Set(`
+    apple banana orange pear grape peach cat dog bird fish rabbit tiger panda horse cow pig duck bear mouse
+    book pen pencil ruler eraser schoolbag desk chair box ball kite doll clock watch red blue green yellow black
+    white pink brown car bus bike plane train boat water milk tea juice bread rice egg cake candy sugar father
+    mother brother sister family friend baby grandpa grandma sun moon star rain snow wind sky tree flower happy sad
+    big small tall short hot cold good bad park zoo home morning today head eye ear nose mouth hand foot leg arm
+    hair face tooth shirt dress hat cap shoe football swimming
+  `.trim().split(/\s+/)),
+  upper: new Set(`
+    watermelon mango lemon cherry tomato melon monkey lion sheep chicken fox frog goat phone computer camera paper
+    notebook classroom library purple gray gold ship taxi truck noodles pizza soup meat ham salt potato carrot corn
+    bean doctor nurse farmer worker driver cook uncle aunt cloud grass river lake sea fast slow new old long clean
+    cute shop farm garden street city station week year summer skirt coat sock running jumping
+  `.trim().split(/\s+/)),
+  middle: new Set(`
+    strawberry pineapple kiwi plum elephant wolf snake turtle giraffe kangaroo zebra deer donkey goose blackboard
+    chalk dictionary homework silver subway coffee dumpling hamburger sandwich salad porridge cheese butter vegetable
+    cabbage onion mushroom cucumber policeman artist singer actor cousin mountain forest island rainbow thunder fog
+    dirty hungry thirsty tired angry strong weak hospital supermarket village airport restaurant museum afternoon
+    evening tomorrow yesterday month spring autumn winter trousers glove scarf sweater basketball volleyball tennis boxing
+  `.trim().split(/\s+/))
+};
+
+const BASE_WORDS = [
   ['apple', '苹果'], ['banana', '香蕉'], ['orange', '橙子'], ['grape', '葡萄'], ['pear', '梨'],
   ['peach', '桃子'], ['watermelon', '西瓜'], ['strawberry', '草莓'], ['mango', '芒果'], ['lemon', '柠檬'],
   ['cherry', '樱桃'], ['pineapple', '菠萝'], ['kiwi', '猕猴桃'], ['tomato', '西红柿'], ['melon', '哈密瓜'], ['plum', '李子'],
@@ -215,15 +280,32 @@ const WORDS = [
   ['swimming', '游泳'], ['running', '跑步'], ['jumping', '跳跃'], ['boxing', '拳击']
 ];
 
+const wordLevels = new Map();
+let gradedWordCount = 0;
+Object.entries(GRADE_WORDS).forEach(([level, words]) => {
+  words.forEach(word => {
+    if (wordLevels.has(word)) throw new Error('单词重复分级：' + word);
+    wordLevels.set(word, level);
+    gradedWordCount++;
+  });
+});
+
+const WORDS = BASE_WORDS.map(([english, chinese]) => [english, chinese, wordLevels.get(english)]);
+if (gradedWordCount !== BASE_WORDS.length || WORDS.some(word => !word[2])) {
+  throw new Error('词库分级不完整，请检查 GRADE_WORDS');
+}
+
 const board = document.getElementById('board');
 const overlay = document.getElementById('overlay');
 const finalTimeEl = document.getElementById('finalTime');
 const timerEl = document.getElementById('timer');
 const roundLabel = document.getElementById('roundLabel');
 const nextBtn = document.getElementById('nextBtn');
+const difficultySelect = document.getElementById('difficultySelect');
 const soundBtn = document.getElementById('soundBtn');
 
 let usedIdx = new Set();
+let activeLevel = 'all';
 let round = 0;
 let pairs = [];
 let selected = null;
@@ -242,12 +324,14 @@ function shuffle(a) {
 }
 
 function pickPairs() {
-  let avail = WORDS.map((_, i) => i).filter(i => !usedIdx.has(i));
-  if (avail.length < 9) { usedIdx = new Set(); avail = WORDS.map((_, i) => i); }
+  const pool = WORDS.map((word, index) => ({ word, index }))
+    .filter(item => activeLevel === 'all' || item.word[2] === activeLevel);
+  let avail = pool.filter(item => !usedIdx.has(item.index));
+  if (avail.length < 9) { usedIdx = new Set(); avail = pool; }
   shuffle(avail);
   const chosen = avail.slice(0, 9);
-  chosen.forEach(i => usedIdx.add(i));
-  return chosen.map(i => WORDS[i]);
+  chosen.forEach(item => usedIdx.add(item.index));
+  return chosen.map(item => item.word);
 }
 
 function luminance(hex) {
@@ -282,6 +366,7 @@ function buildBoard(list) {
     el.dataset.key = t.key;
     el.dataset.type = t.type;
     el.dataset.text = t.text;
+    el.dataset.level = list[t.key][2];
     const color = PALETTE[Math.floor(Math.random() * PALETTE.length)];
     el.style.background = 'radial-gradient(circle at 32% 28%, rgba(255,255,255,.9), ' + color + ' 58%, ' + shade(color, 0.45) + ' 100%)';
     el.style.boxShadow = 'inset -8px -12px 18px rgba(0,0,0,.18), inset 6px 10px 14px rgba(255,255,255,.4), 0 10px 22px rgba(0,0,0,.22)';
@@ -425,9 +510,21 @@ board.addEventListener('click', function (e) {
 nextBtn.addEventListener('click', function () {
   overlay.classList.add('hidden');
   round++;
-  roundLabel.textContent = '第 ' + (round + 1) + ' 关';
+  roundLabel.textContent = GRADE_LABELS[activeLevel] + ' · 第 ' + (round + 1) + ' 关';
   startAt = 0;
   timerEl.textContent = '用时 00:00';
+  buildBoard(pickPairs());
+});
+
+difficultySelect.addEventListener('change', function () {
+  activeLevel = difficultySelect.value;
+  usedIdx = new Set();
+  round = 0;
+  startAt = 0;
+  stopTimer();
+  timerEl.textContent = '用时 00:00';
+  roundLabel.textContent = GRADE_LABELS[activeLevel] + ' · 第 1 关';
+  overlay.classList.add('hidden');
   buildBoard(pickPairs());
 });
 
