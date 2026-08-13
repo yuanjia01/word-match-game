@@ -384,7 +384,7 @@ if ('speechSynthesis' in window) {
 }
 
 function speak(word) {
-  if (!('speechSynthesis' in window)) return;
+  if (!('speechSynthesis' in window)) { ttsFallback(word); return; }
   speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(word);
   u.lang = 'en-US';
@@ -392,7 +392,16 @@ function speak(word) {
   u.pitch = 1.05;
   const v = voices.find(v => v.lang.replace('_', '-').toLowerCase().startsWith('en'));
   if (v) u.voice = v;
+  u.onerror = function() { ttsFallback(word); };
   speechSynthesis.speak(u);
+  setTimeout(function() {
+    if (!speechSynthesis.speaking) ttsFallback(word);
+  }, 900);
+}
+
+function ttsFallback(word) {
+  const a = new Audio('https://dict.youdao.com/dictvoice?type=0&audio=' + encodeURIComponent(word) + '&le=en');
+  a.play().catch(function(){});
 }
 
 function getCtx() {
