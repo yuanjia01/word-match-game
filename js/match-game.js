@@ -125,6 +125,13 @@ soundBtn.addEventListener('click', function () {
   setSound(!soundOn);
 });
 
+/* 离开单词游戏页时由 app.js 调用：停止计时并清零，避免计时器在另一玩法/主页期间残留运行（AIL-11/T5） */
+window.stopMatchTimer = function () {
+  stopTimer();
+  startAt = 0;
+  timerEl.textContent = '用时 00:00';
+};
+
 /* 初始化：开始第一关（T6：单词玩法使用清脆/低沉音色） */
 setSoundVariant('word');
 buildBoard(pickPairs());

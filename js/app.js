@@ -24,13 +24,13 @@
     });
   }
 
-  /* 年级 key 列表：优先读取 T1（AIL-7）提供的 GRADE_WORDS_3_9，缺失时兜底 3~9 年级 */
+  /* 年级 key 列表：由 T1（AIL-7）提供的 js/data/grade-words.js（GRADE_WORDS_3_9）生成，
+     数据文件未加载时兜底 3~9 年级 */
   function getGradeKeys() {
     if (typeof GRADE_WORDS_3_9 !== 'undefined' && GRADE_WORDS_3_9) {
       var keys = Object.keys(GRADE_WORDS_3_9).filter(function (k) { return /^grade\d+$/.test(k); });
       if (keys.length) return keys;
     }
-    // TODO(AIL-7/T1)：js/data/grade-words.js 尚未就绪，先用固定 3~9 年级兜底
     return ['grade3', 'grade4', 'grade5', 'grade6', 'grade7', 'grade8', 'grade9'];
   }
 
@@ -41,7 +41,9 @@
   }
 
   /* 年级 -> 当前引擎难度档位。
-     TODO(AIL-5/T5)：GRADE_WORDS_3_9 接入后可改为按真实年级过滤；现阶段映射到现有 all/lower/upper/middle 档位 */
+     游戏词池（BASE_WORDS）按 低年级/高年级/初中 三档分组，GRADE_WORDS_3_9 里 3~9 年级词汇
+     未全部收录进可玩词池（6~9 年级与 BASE_WORDS 交集很小），故按档位映射保证可玩：
+     3~5 年级 -> 低年级，6~7 年级 -> 高年级，8~9 年级 -> 初中 */
   function legacyLevelFor(key) {
     var n = gradeNumber(key);
     if (n === null) return 'all';
@@ -94,8 +96,10 @@
     }
   }
 
-  /* 返回主页 */
+  /* 返回主页：先停止两个玩法的计时器并清零，避免跨页面残留计时（AIL-11/T5 双玩法状态串扰） */
   function goHome() {
+    if (typeof window.stopMatchTimer === 'function') window.stopMatchTimer();
+    if (typeof window.stopPhoneticTimer === 'function') window.stopPhoneticTimer();
     showScreen('home');
   }
 
