@@ -155,3 +155,100 @@ h1 {
   border-color: #D9C48A;
   opacity: .85;
 }
+
+/* ===== 主页 / 入口路由布局（阶段1·T2） ===== */
+.hidden { display: none !important; }
+.screen {
+  width: 100%;
+  display: flex; flex-direction: column; align-items: center;
+  animation: rise .3s ease;
+}
+.home-subtitle {
+  margin-top: 8px;
+  font-size: clamp(15px, 2vw, 20px);
+  color: #7C4A03; font-weight: 700;
+}
+.mode-cards {
+  display: flex; flex-wrap: wrap; justify-content: center;
+  gap: clamp(14px, 2.5vw, 30px);
+  width: min(94vw, 900px);
+  margin-top: clamp(24px, 5vw, 48px);
+}
+.mode-card {
+  flex: 1 1 260px; max-width: 420px; min-height: 210px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 12px; padding: 24px 18px;
+  border: 3px solid #F7B32B; border-radius: 24px;
+  background: #FFFDF2; cursor: pointer; touch-action: manipulation;
+  box-shadow: 0 10px 22px rgba(180, 83, 9, .18);
+  transition: transform .18s ease, box-shadow .18s ease;
+  font-family: inherit;
+}
+.mode-card:active { transform: translateY(3px); }
+.mode-emoji {
+  width: clamp(64px, 10vw, 88px); height: clamp(64px, 10vw, 88px);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: clamp(26px, 4vw, 40px); font-weight: 900; color: #fff;
+  background: linear-gradient(180deg, #FFB347, #E07B00);
+  box-shadow: 0 6px 14px rgba(224, 123, 0, .4);
+}
+.mode-card:nth-child(2) .mode-emoji { background: linear-gradient(180deg, #7FCF7A, #3DA35D); }
+.mode-name {
+  font-size: clamp(22px, 3vw, 30px);
+  font-weight: 900; color: #B45309; letter-spacing: 4px;
+}
+.mode-desc {
+  font-size: clamp(13px, 1.6vw, 16px);
+  color: #7C4A03; font-weight: 600;
+}
+
+/* 年级选择 */
+.screen h2 {
+  font-size: clamp(24px, 3.4vw, 36px);
+  color: #B45309; margin-top: 10px; letter-spacing: 4px;
+}
+.grade-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 14px;
+  width: min(94vw, 560px);
+  margin-top: clamp(22px, 4vw, 40px);
+}
+.grade-btn {
+  padding: clamp(16px, 2.4vw, 22px) 12px;
+  border: none; border-radius: 18px;
+  font-size: clamp(17px, 2.2vw, 22px);
+  font-weight: 900; letter-spacing: 2px; color: #fff; cursor: pointer;
+  background: linear-gradient(180deg, #FFB347, #E07B00);
+  box-shadow: 0 6px 14px rgba(224, 123, 0, .35);
+  touch-action: manipulation;
+  font-family: inherit;
+}
+.grade-btn:active { transform: translateY(2px); }
+.grade-btn.grade-all { background: linear-gradient(180deg, #7FCF7A, #3DA35D); }
+.screen-footer { margin-top: clamp(24px, 4vw, 40px); }
+.back-btn {
+  padding: 10px 30px;
+  border: 2px solid #F5B940; border-radius: 999px;
+  background: linear-gradient(180deg, #FFF3C4, #FFE29A);
+  color: #B45309; font-size: 16px; font-weight: 800; letter-spacing: 2px;
+  cursor: pointer; touch-action: manipulation;
+  font-family: inherit;
+}
+.back-btn:active { transform: translateY(2px); }
+
+/* 单词游戏页顶部返回按钮 */
+.game-top {
+  display: flex; justify-content: flex-end;
+  width: min(94vw, 1150px);
+  margin-bottom: 4px;
+}
+
+/* 音标占位页 */
+.placeholder {
+  margin-top: clamp(30px, 6vw, 60px);
+  text-align: center;
+  font-size: clamp(18px, 2.6vw, 26px);
+  font-weight: 800; color: #7C4A03;
+}
