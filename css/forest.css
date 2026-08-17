@@ -1,0 +1,268 @@
+/* ============================================================
+   森林主题样式（css/forest.css）
+   整体氛围：绿地天空渐变、远处山丘、林间雾气、木质面板、苔藓色系泡泡
+   纯视觉美化层，不改变任何游戏逻辑与数据结构
+   ============================================================ */
+
+/* ---------- 林地背景：渐变绿色天空 ---------- */
+body {
+  background-color: #b9d8a2;
+  background-image:
+    radial-gradient(ellipse 70% 45% at 14% -5%, rgba(255, 253, 214, .6), transparent 62%),
+    radial-gradient(ellipse 55% 40% at 88% -6%, rgba(255, 251, 200, .4), transparent 58%),
+    linear-gradient(180deg, #eaf6cf 0%, #cfe9ac 42%, #a9d287 72%, #7fb069 100%);
+  background-size: auto;
+  background-repeat: no-repeat;
+}
+
+/* ---------- 标题：苔藓绿 + 奶油投影 ---------- */
+h1 {
+  color: #3f6b2f;
+  text-shadow: 0 3px 0 #f7f6dc, 0 8px 18px rgba(63, 107, 47, .3);
+}
+
+/* ---------- 难度选择：浅木纹药丸 ---------- */
+.difficulty {
+  color: #4a3518;
+  background:
+    linear-gradient(rgba(255, 255, 255, .42), rgba(255, 255, 255, .26)),
+    repeating-linear-gradient(94deg, #d8b071 0 14px, #c99a63 14px 28px);
+  border: 2px solid rgba(95, 64, 32, .28);
+  box-shadow: 0 5px 14px rgba(74, 53, 24, .16);
+}
+.difficulty select {
+  border-color: #8fae5a;
+  color: #4a3518;
+  background: #fdf6dd;
+}
+.difficulty select:focus-visible { box-shadow: 0 0 0 4px rgba(143, 174, 90, .35); }
+
+/* ---------- 状态栏：苔藓绿文字 ---------- */
+.status { color: #3f5d2b; }
+
+/* ---------- 泡泡（游戏方块）：自然色系，保留 3D 立体感 ---------- */
+/* 苔藓绿泡泡 */
+.bubble {
+  border: 2px solid rgba(255, 255, 255, .35);
+  background: radial-gradient(circle at 32% 28%, rgba(255, 255, 255, .85), #7fb069 58%, #47723f 100%) !important;
+  box-shadow:
+    inset -8px -12px 18px rgba(0, 0, 0, .22),
+    inset 6px 10px 14px rgba(255, 255, 255, .32),
+    0 10px 22px rgba(48, 72, 36, .35) !important;
+  color: #fff !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, .5) !important;
+}
+/* 蜂蜜黄泡泡 */
+.bubble:nth-child(3n + 2) {
+  background: radial-gradient(circle at 32% 28%, rgba(255, 255, 255, .9), #f2c14e 58%, #cf9a22 100%) !important;
+  color: #5b4218 !important;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, .6) !important;
+}
+/* 树干棕泡泡 */
+.bubble:nth-child(3n + 3) {
+  background: radial-gradient(circle at 32% 28%, rgba(255, 255, 255, .8), #c08a4f 58%, #8a5a33 100%) !important;
+}
+
+/* ---------- 胜利面板：树皮纹理 ---------- */
+.overlay { background: rgba(22, 36, 16, .5); }
+.card {
+  background:
+    linear-gradient(rgba(124, 82, 40, .16), rgba(124, 82, 40, .16)),
+    repeating-linear-gradient(92deg, #d3a66b 0 26px, #c4935a 26px 52px);
+  border: 3px solid #7a4c2a;
+  box-shadow: 0 20px 60px rgba(20, 34, 14, .45);
+}
+.card h2 {
+  color: #3f6b2f;
+  text-shadow: 0 2px 0 #f7f6dc;
+}
+.card p { color: #5b4218; }
+
+/* ---------- 继续挑战按钮：蜂蜜金 ---------- */
+#nextBtn {
+  background: linear-gradient(180deg, #f6c453, #e0921f);
+  box-shadow: 0 8px 20px rgba(224, 146, 31, .45), inset 0 2px 4px rgba(255, 255, 255, .55);
+}
+
+/* ---------- 音效开关：蜂蜜 + 木纹 ---------- */
+#soundBtn {
+  border-color: #8fae5a;
+  background: linear-gradient(180deg, #fbf3cf, #e9d48f);
+  color: #5b4218;
+  box-shadow: 0 4px 12px rgba(74, 53, 24, .22), inset 0 2px 4px rgba(255, 255, 255, .6);
+}
+#soundBtn.off {
+  background: linear-gradient(180deg, #ece2c6, #dccda6);
+  color: #7a643c;
+  border-color: #c2b487;
+}
+
+/* ---------- 主要内容上浮到森林场景之上 ---------- */
+header, .status, .board { position: relative; z-index: 2; }
+
+/* ============================================================
+   森林场景（由 js/forest.js 生成）：固定铺底，不遮挡游戏
+   ============================================================ */
+#forestScene {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* 远景太阳光晕 */
+#forestScene .forest-sun {
+  position: absolute;
+  left: 6%; top: 4%;
+  width: 26vmin; height: 26vmin;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 246, 190, .75) 0%, rgba(255, 246, 190, .25) 45%, transparent 70%);
+  pointer-events: none;
+}
+
+/* 远山 */
+#forestScene .hills {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  width: 100%; height: 30vh;
+  pointer-events: none;
+}
+
+/* 林间雾气 */
+#forestScene .mist {
+  position: absolute;
+  left: -18%; width: 136%; height: 16vh;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(255, 255, 255, .34), rgba(255, 255, 255, 0) 68%);
+  filter: blur(7px);
+  animation: forestMist 16s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+#forestScene .mist-1 { top: 55%; }
+#forestScene .mist-2 { top: 72%; opacity: .7; animation-duration: 22s; animation-delay: -7s; }
+@keyframes forestMist {
+  from { transform: translateX(-5%); }
+  to   { transform: translateX(6%) scale(1.06); }
+}
+
+/* 飘落的树叶 */
+#forestScene .leaf {
+  position: absolute;
+  top: -6vh;
+  width: 12px; height: 7px;
+  border-radius: 3px 8px;
+  background: linear-gradient(135deg, #8fae5a, #6d9e4a);
+  opacity: .8;
+  animation: forestFall linear infinite;
+  pointer-events: none;
+}
+#forestScene .leaf-1 { left: 8%;  animation-duration: 13s; }
+#forestScene .leaf-2 { left: 26%; animation-duration: 17s; animation-delay: -6s; width: 9px; height: 5px; }
+#forestScene .leaf-3 { left: 44%; animation-duration: 15s; animation-delay: -11s; }
+#forestScene .leaf-4 { left: 63%; animation-duration: 19s; animation-delay: -3s; width: 10px; height: 6px; }
+#forestScene .leaf-5 { left: 78%; animation-duration: 14s; animation-delay: -9s; }
+#forestScene .leaf-6 { left: 90%; animation-duration: 18s; animation-delay: -14s; width: 8px; height: 5px; }
+@keyframes forestFall {
+  0%   { transform: translateY(-8vh) rotate(0deg); }
+  100% { transform: translateY(112vh) rotate(320deg); }
+}
+
+/* ============================================================
+   动物（内嵌进树洞 / 灌木 / 树后，属于场景的一部分）
+   ============================================================ */
+#forestScene .animal {
+  position: absolute;
+  pointer-events: auto;
+  cursor: pointer;
+}
+#forestScene .animal svg { display: block; }
+/* 竖构图：树干上的动物 */
+#forestScene .animal-squirrel { left: 0;  top: 10%; height: 52%; }
+#forestScene .animal-deer     { right: 0; top: 30%; height: 46%; }
+#forestScene .animal-squirrel svg,
+#forestScene .animal-deer svg     { height: 100%; width: auto; }
+/* 横构图：灌木中的兔子 / 树枝上的小鸟 */
+#forestScene .animal-rabbit { left: 0; bottom: 0; width: 34vw; max-width: 330px; }
+#forestScene .animal-bird   { right: 4%; top: 12%; width: 30vw; max-width: 290px; }
+#forestScene .animal-rabbit svg,
+#forestScene .animal-bird svg     { width: 100%; height: auto; }
+
+/* 轻柔的待机晃动（加在 svg 上，不影响容器上点击时叠加的抖动） */
+#forestScene .animal svg {
+  transform-origin: 50% 92%;
+  animation: animalIdle 5s ease-in-out infinite;
+}
+#forestScene .animal-bird svg {
+  transform-origin: 50% 50%;
+  animation: birdIdle 3.6s ease-in-out infinite;
+}
+@keyframes animalIdle {
+  0%, 100% { transform: rotate(.7deg); }
+  50%      { transform: rotate(-.7deg); }
+}
+@keyframes birdIdle {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-4px); }
+}
+
+/* 点击互动：抖动 / 眨眼 / 叫声 */
+#forestScene .animal { transition: filter .18s ease; }
+#forestScene .animal:hover { filter: drop-shadow(0 0 7px rgba(255, 236, 150, .65)); }
+#forestScene .animal.wiggle { animation: animalWiggle .6s ease; }
+#forestScene .animal-bird.wiggle { animation: birdHop .6s ease; }
+@keyframes animalWiggle {
+  0%, 100% { transform: rotate(0) translateY(0); }
+  20%      { transform: rotate(-3deg) translateY(-4px); }
+  45%      { transform: rotate(3deg) translateY(0); }
+  70%      { transform: rotate(-2deg) translateY(3px); }
+}
+@keyframes birdHop {
+  0%, 100% { transform: translateY(0) rotate(0); }
+  30%      { transform: translateY(-16px) rotate(-5deg); }
+  60%      { transform: translateY(0) rotate(3deg); }
+}
+/* 眼睛眨眼 */
+#forestScene .animal .eye {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+#forestScene .animal.wiggle .eye { animation: animalBlink .6s ease; }
+@keyframes animalBlink {
+  0%, 42%, 100% { transform: scaleY(1); }
+  50%, 62%      { transform: scaleY(.08); }
+}
+
+/* 叫声提示气泡 */
+#forestScene .animal .call {
+  position: absolute;
+  left: 50%; bottom: 100%;
+  transform: translateX(-50%);
+  background: rgba(255, 255, 255, .92);
+  color: #5b4218;
+  font-weight: 800;
+  font-size: clamp(12px, 2.2vw, 16px);
+  line-height: 1;
+  padding: 6px 10px;
+  border-radius: 999px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, .2);
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+}
+#forestScene .animal.wiggle .call { animation: callPop .9s ease forwards; }
+@keyframes callPop {
+  0%   { opacity: 0; transform: translateX(-50%) translateY(6px) scale(.8); }
+  22%  { opacity: 1; transform: translateX(-50%) translateY(-2px) scale(1.05); }
+  70%  { opacity: 1; transform: translateX(-50%) translateY(-9px) scale(1); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-20px) scale(.9); }
+}
+
+/* ---------- 尊重系统"减弱动态效果"设置 ---------- */
+@media (prefers-reduced-motion: reduce) {
+  #forestScene .leaf,
+  #forestScene .mist,
+  #forestScene .animal svg { animation: none !important; }
+}
