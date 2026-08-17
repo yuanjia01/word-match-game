@@ -73,24 +73,35 @@
   </div>
 </main>
 
-<!-- 音标消消乐占位页（具体玩法由 AIL-9/T3 提供，入口路由已预留 initPhoneticGame 钩子） -->
+<!-- 音标消消乐游戏页（AIL-9/T3：js/phonetic-game.js 逻辑，js/app.js 路由进入） -->
 <main id="screen-phonetic" class="screen hidden">
   <header>
+    <div class="game-top">
+      <button class="back-btn" id="phoneticBackBtn">返回主页</button>
+    </div>
     <h1>音标消消乐</h1>
   </header>
-  <div class="placeholder" id="phoneticPlaceholder">
-    <p>音标玩法开发中，敬请期待！</p>
+  <div class="status">
+    <span id="phoneticRoundLabel">第 1 关</span>
+    <span id="phoneticTimer">用时 00:00</span>
   </div>
-  <div class="screen-footer">
-    <button class="back-btn" id="phoneticBackBtn">返回主页</button>
+  <div class="board" id="phoneticBoard"></div>
+  <div class="overlay hidden" id="phoneticOverlay">
+    <div class="card">
+      <h2>恭喜你挑战成功！</h2>
+      <p id="phoneticFinalTime">用时 00:00</p>
+      <button id="phoneticNextBtn">再来一局</button>
+    </div>
   </div>
 </main>
 
 <script src="js/data/words.js"></script>
+<script src="js/data/phonetics.js"></script>
 <script src="js/match-core.js"></script>
 <script src="js/audio.js"></script>
 <script src="js/speech.js"></script>
 <script src="js/match-game.js"></script>
+<script src="js/phonetic-game.js"></script>
 <script src="js/app.js"></script>
 <script src="js/forest.js"></script>
 </body>
