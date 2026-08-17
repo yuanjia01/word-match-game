@@ -101,12 +101,12 @@ h1 {
 header, .status, .board { position: relative; z-index: 2; }
 
 /* ============================================================
-   森林场景（由 js/forest.js 生成）：固定铺底，不遮挡游戏
+   森林场景（由 js/forest.js 生成）：固定铺底，永远位于内容下层，不遮挡游戏
    ============================================================ */
 #forestScene {
   position: fixed;
   inset: 0;
-  z-index: 0;
+  z-index: -1;
   overflow: hidden;
   pointer-events: none;
   user-select: none;

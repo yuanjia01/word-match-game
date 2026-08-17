@@ -162,5 +162,12 @@
     }
   }
 
+  /* 离开音标游戏页时由 app.js 调用：停止计时并清零，避免计时器在另一玩法/主页期间残留运行（AIL-11/T5） */
+  window.stopPhoneticTimer = function () {
+    stopTimer();
+    startAt = 0;
+    timerEl.textContent = '用时 00:00';
+  };
+
   window.initPhoneticGame = initPhoneticGame;
 })();
