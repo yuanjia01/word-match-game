@@ -115,7 +115,7 @@
       selected = null;
       return;
     }
-    if (el.dataset.type === 'ph') speak(el.dataset.text);
+    if (el.dataset.type === 'ph') speakPhonetic(el.dataset.text);
     if (!selected) {
       selected = el;
       el.classList.add('selected');
@@ -154,6 +154,7 @@
   /* 入口（js/app.js 路由调用）：首次进入构建第一关，重复进入保持当前进度 */
   function initPhoneticGame() {
     if (typeof PHONETICS === 'undefined') return;
+    setSoundVariant('phonetic'); /* T6：音标玩法使用木鱼/水滴音色 */
     if (!board.children.length) {
       round = 0;
       roundLabel.textContent = '第 1 关';
