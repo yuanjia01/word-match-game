@@ -7,35 +7,90 @@
 <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
-<header>
-  <h1>单词消消乐</h1>
-  <div class="difficulty">
-    <label for="difficultySelect">学习难度</label>
-    <select id="difficultySelect">
-      <option value="all" selected>全部</option>
-      <option value="lower">低年级</option>
-      <option value="upper">高年级</option>
-      <option value="middle">初中</option>
-    </select>
-  </div>
-</header>
 <button id="soundBtn" aria-label="音效开关">音效 开</button>
-<div class="status">
-  <span id="roundLabel">全部词库 · 第 1 关</span>
-  <span id="timer">用时 00:00</span>
-</div>
-<div class="board" id="board"></div>
-<div class="overlay hidden" id="overlay">
-  <div class="card">
-    <h2>恭喜你挑战成功！</h2>
-    <p id="finalTime">用时 00:00</p>
-    <button id="nextBtn">继续挑战</button>
+
+<!-- 主页：双玩法选择（阶段1·T2） -->
+<main id="screen-home" class="screen">
+  <header>
+    <h1>单词消消乐</h1>
+    <p class="home-subtitle">选择一种玩法，开始挑战吧！</p>
+  </header>
+  <div class="mode-cards">
+    <button class="mode-card" id="modeWordBtn" aria-label="进入单词消消乐">
+      <span class="mode-emoji">A</span>
+      <span class="mode-name">单词消消乐</span>
+      <span class="mode-desc">中英单词配对 · 3-9 年级自选</span>
+    </button>
+    <button class="mode-card" id="modePhoneticBtn" aria-label="进入音标消消乐">
+      <span class="mode-emoji">P</span>
+      <span class="mode-name">音标消消乐</span>
+      <span class="mode-desc">国际音标配对消除</span>
+    </button>
   </div>
-</div>
+</main>
+
+<!-- 年级选择（单词消消乐进入前） -->
+<main id="screen-grade" class="screen hidden">
+  <header>
+    <h2>选择年级</h2>
+  </header>
+  <div class="grade-grid" id="gradeGrid"></div>
+  <div class="screen-footer">
+    <button class="back-btn" id="gradeBackBtn">返回</button>
+  </div>
+</main>
+
+<!-- 单词消消乐游戏页（保留原有游戏结构，隐藏原有难度下拉，改由年级选择驱动） -->
+<main id="screen-word" class="screen hidden">
+  <header>
+    <div class="game-top">
+      <button class="back-btn" id="wordBackBtn">返回主页</button>
+    </div>
+    <h1>单词消消乐</h1>
+    <!-- 原难度下拉保留在 DOM 中（match-game.js 依赖），由 js/app.js 程序化驱动，视觉上隐藏 -->
+    <div class="difficulty hidden" id="difficultyWrap">
+      <label for="difficultySelect">学习难度</label>
+      <select id="difficultySelect">
+        <option value="all" selected>全部</option>
+        <option value="lower">低年级</option>
+        <option value="upper">高年级</option>
+        <option value="middle">初中</option>
+      </select>
+    </div>
+  </header>
+  <div class="status">
+    <span id="roundLabel">全部词库 · 第 1 关</span>
+    <span id="timer">用时 00:00</span>
+  </div>
+  <div class="board" id="board"></div>
+  <div class="overlay hidden" id="overlay">
+    <div class="card">
+      <h2>恭喜你挑战成功！</h2>
+      <p id="finalTime">用时 00:00</p>
+      <button id="nextBtn">继续挑战</button>
+    </div>
+  </div>
+</main>
+
+<!-- 音标消消乐占位页（具体玩法由 AIL-9/T3 提供，入口路由已预留 initPhoneticGame 钩子） -->
+<main id="screen-phonetic" class="screen hidden">
+  <header>
+    <h1>音标消消乐</h1>
+  </header>
+  <div class="placeholder" id="phoneticPlaceholder">
+    <p>音标玩法开发中，敬请期待！</p>
+  </div>
+  <div class="screen-footer">
+    <button class="back-btn" id="phoneticBackBtn">返回主页</button>
+  </div>
+</main>
+
 <script src="js/data/words.js"></script>
 <script src="js/match-core.js"></script>
 <script src="js/audio.js"></script>
 <script src="js/speech.js"></script>
 <script src="js/match-game.js"></script>
+<!-- TODO(AIL-7/T1)：js/data/grade-words.js（GRADE_WORDS_3_9）就绪后在此引入，app.js 会自动读取；当前缺失时走固定 3-9 年级兜底 -->
+<script src="js/app.js"></script>
 </body>
 </html>
