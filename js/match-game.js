@@ -125,5 +125,6 @@ soundBtn.addEventListener('click', function () {
   setSound(!soundOn);
 });
 
-/* 初始化：开始第一关 */
+/* 初始化：开始第一关（T6：单词玩法使用清脆/低沉音色） */
+setSoundVariant('word');
 buildBoard(pickPairs());
