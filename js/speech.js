@@ -24,8 +24,9 @@ function speak(word) {
   speechSynthesis.speak(u);
 }
 
-/* 朗读音标（音标版）：按符号在 PHONETICS 数据中查到对应词条，
-   先读示例词（英文发音），再读中文描述（如“长音 i”）；找不到则按英文单词兜底 */
+/* 朗读音标（音标版）：只朗读音标本身的发音，不读示例词（避免泄露答案）。
+   用 PHONETICS 数据里的 sound 字段（音素的近似拼读，如 i: → "ee"）做英文朗读，
+   再读中文描述（如“长音 i”）；找不到对应词条则直接读符号文本兜底 */
 function speakPhonetic(symbol) {
   if (!('speechSynthesis' in window)) return;
   let item = null;
@@ -34,11 +35,11 @@ function speakPhonetic(symbol) {
   }
   if (!item) { speak(symbol); return; }
   speechSynthesis.cancel();
-  /* 示例词 · 英文朗读 */
-  const uEn = new SpeechSynthesisUtterance(item.example);
+  /* 音素近似拼读 · 英文朗读（仅音素本身，不含示例词） */
+  const uEn = new SpeechSynthesisUtterance(item.sound);
   uEn.lang = 'en-US';
-  uEn.rate = 0.95;
-  uEn.pitch = 1.05;
+  uEn.rate = 0.8;
+  uEn.pitch = 1.0;
   const vEn = voices.find(v => v.lang.replace('_', '-').toLowerCase().startsWith('en'));
   if (vEn) uEn.voice = vEn;
   speechSynthesis.speak(uEn);
