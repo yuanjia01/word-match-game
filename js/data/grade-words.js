@@ -725,3 +725,28 @@ const GRADE_WORDS_3_9 = {
     {en: "therefore", cn: "因此"}
   ]
 };
+
+/* 难度区间定义（T9 / AIL-15）：按年级划分难度，不改动上方词数据。
+   3-4 年级为简单、5-6 年级为中等、7-9 年级为难。 */
+const GRADE_DIFFICULTY_RANGES = {
+  easy: ['grade3', 'grade4'],
+  medium: ['grade5', 'grade6'],
+  hard: ['grade7', 'grade8', 'grade9']
+};
+
+/* 可玩词池档位（js/data/words.js 的 GRADE_WORDS：lower/upper/middle）到难度区间的映射，
+   使词池单词可按所属档位归入难度区间。 */
+const LEVEL_TO_DIFFICULTY = {
+  lower: 'easy',
+  upper: 'medium',
+  middle: 'hard'
+};
+
+/* 每关 9 对的难度配比（key 为 activeLevel，值为 { easy, medium, hard }）。
+   任意模式均含简单+中等+难；分级模式以所选档位为主（5 对主难度 + 上下各 2 对）。 */
+const LEVEL_MIX_RATIO = {
+  all: { easy: 4, medium: 3, hard: 2 },
+  lower: { easy: 5, medium: 2, hard: 2 },
+  upper: { easy: 2, medium: 5, hard: 2 },
+  middle: { easy: 2, medium: 2, hard: 5 }
+};

@@ -53,6 +53,48 @@ function startTimer() {
 /* 停止计时 */
 function stopTimer() { clearInterval(timerId); }
 
+/* 词条所属难度区间（T9/AIL-15）：按词池档位映射到 GRADE_DIFFICULTY_RANGES 的难度区间 */
+function difficultyOf(word) {
+  return LEVEL_TO_DIFFICULTY[word[2]] || 'easy';
+}
+
+/* 每关混合难度选词（T9/AIL-15）：覆盖 js/match-core.js 的全局 pickPairs（本脚本后加载生效）。
+   按数据层配比 LEVEL_MIX_RATIO 从各难度区间抽取 9 对，保证每关简单+中等+难混合；
+   同一关内单词不重复，跨关沿用 usedIdx 尽量不重复。 */
+function pickPairs() {
+  const ratio = LEVEL_MIX_RATIO[activeLevel] || LEVEL_MIX_RATIO.all;
+  const difficulties = Object.keys(ratio);
+  const pool = WORDS.map((word, index) => ({ word, index }));
+  const byDiff = {};
+  difficulties.forEach(d => {
+    byDiff[d] = pool.filter(item => difficultyOf(item.word) === d);
+  });
+  const chosen = [];
+  const picked = new Set();
+  difficulties.forEach(d => {
+    const need = ratio[d];
+    let avail = byDiff[d].filter(item => !usedIdx.has(item.index));
+    if (avail.length < need) avail = byDiff[d].slice();
+    shuffle(avail);
+    avail.slice(0, need).forEach(item => {
+      chosen.push(item.word);
+      picked.add(item.index);
+      usedIdx.add(item.index);
+    });
+  });
+  /* 兜底：某难度词池不足时，用剩余未用词补齐到 9 对 */
+  if (chosen.length < 9) {
+    const rest = pool.filter(item => !picked.has(item.index));
+    shuffle(rest);
+    rest.slice(0, 9 - chosen.length).forEach(item => {
+      chosen.push(item.word);
+      picked.add(item.index);
+      usedIdx.add(item.index);
+    });
+  }
+  return chosen;
+}
+
 /* 胜利弹窗 */
 function showWin() {
   stopTimer();
