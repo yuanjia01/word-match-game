@@ -2,8 +2,9 @@
    阶段2·T6（AIL-12）：新增 speakPhonetic —— 音标玩法朗读音标，
    读取 PHONETICS 数据里的示例词与中文描述
    阶段2·修复：恢复有道发音兜底（原版 1aab6520 有，T0 重构时丢失）。
-   手机/平板（iOS Safari、微信内嵌浏览器）无系统语音包时 speechSynthesis 不发声，
-   改用有道词典发音接口兜底 */
+   关键：iOS/微信内嵌浏览器 speechSynthesis 多静默失败，且音频播放必须发生在
+   用户点击手势内（setTimeout 回调中的 play() 会被拦截）。因此触摸设备直接走
+   有道发音（手势内播放），PC 走原生 TTS 并保留延迟实播检测兜底 */
 
 let voices = [];
 
@@ -14,22 +15,28 @@ if ('speechSynthesis' in window) {
   speechSynthesis.onvoiceschanged = loadVoices;
 }
 
-/* 有道词典发音兜底（美音），兼容手机端无 TTS 语音包的场景 */
+/* 触摸设备判定（iOS/Android 手机平板；iPad 桌面 UA 也有 maxTouchPoints） */
+function isTouchDevice() {
+  return ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+}
+
+/* 有道词典发音兜底（美音）：必须在用户手势内调用 play() 才不会被 iOS 拦截 */
 function youdaoSpeak(word) {
   const a = new Audio('https://dict.youdao.com/dictvoice?type=2&audio=' + encodeURIComponent(word));
   a.play().catch(function () {});
   return a;
 }
 
-/* 有可用英文语音即认为原生 TTS 可用 */
-function hasEnglishVoice() {
-  return 'speechSynthesis' in window && voices.length > 0 &&
-    voices.some(v => v.lang.replace('_', '-').toLowerCase().startsWith('en'));
+/* PC 端实播检测：speak 后 900ms 仍未发声则用有道兜底 */
+function ttsFallbackWatch(word) {
+  setTimeout(function () {
+    if (!speechSynthesis.speaking && !speechSynthesis.pending) youdaoSpeak(word);
+  }, 900);
 }
 
-/* 朗读英文单词（单词版现用逻辑）；手机端无 TTS 语音包时降级为有道发音 */
+/* 朗读英文单词（单词版现用逻辑）。触摸设备直接有道；PC 原生 TTS + 实播检测兜底 */
 function speak(word) {
-  if (!hasEnglishVoice()) {
+  if (isTouchDevice() || !('speechSynthesis' in window)) {
     youdaoSpeak(word);
     return;
   }
@@ -41,6 +48,7 @@ function speak(word) {
   const v = voices.find(v => v.lang.replace('_', '-').toLowerCase().startsWith('en'));
   if (v) u.voice = v;
   speechSynthesis.speak(u);
+  ttsFallbackWatch(word);
 }
 
 /* 朗读音标（音标版）：只朗读音标本身的发音，不读示例词（避免泄露答案）。
@@ -52,8 +60,8 @@ function speakPhonetic(symbol) {
     item = PHONETICS.find(p => p.symbol === symbol);
   }
   if (!item) { speak(symbol); return; }
-  /* 手机端无 TTS 语音包：用有道读音素近似拼读（如 "ee"），中文描述无法朗读则跳过 */
-  if (!hasEnglishVoice()) {
+  if (isTouchDevice() || !('speechSynthesis' in window)) {
+    /* 触摸设备：有道读音素近似拼读（如 "ee"），中文描述有道不支持则跳过 */
     youdaoSpeak(item.sound);
     return;
   }
@@ -74,4 +82,8 @@ function speakPhonetic(symbol) {
   const vZh = voices.find(v => v.lang.replace('_', '-').toLowerCase().startsWith('zh'));
   if (vZh) uZh.voice = vZh;
   speechSynthesis.speak(uZh);
+  /* PC 实播检测：900ms 未发声则降级为有道读音素拼读 */
+  setTimeout(function () {
+    if (!speechSynthesis.speaking && !speechSynthesis.pending) youdaoSpeak(item.sound);
+  }, 900);
 }
