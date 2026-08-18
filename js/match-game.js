@@ -107,13 +107,22 @@ function difficultyOf(word) {
   return LEVEL_TO_DIFFICULTY[word[2]] || 'easy';
 }
 
+/* 当前词池（T8/AIL-14）：主页选中「自定义词库」且有词时使用自定义词库，否则用内置词库。
+   自定义词档位固定为 custom，difficultyOf 兜底归入 easy，可正常参与配对玩法。 */
+function wordPool() {
+  if (window.wordSource === 'custom' && window.USER_WORDS && window.USER_WORDS.hasWords()) {
+    return window.USER_WORDS.get().map(w => [w[0], w[1], 'custom']);
+  }
+  return WORDS;
+}
+
 /* 每关混合难度选词（T9/AIL-15）：覆盖 js/match-core.js 的全局 pickPairs（本脚本后加载生效）。
    按数据层配比 LEVEL_MIX_RATIO 从各难度区间抽取 9 对，保证每关简单+中等+难混合；
    同一关内单词不重复，跨关沿用 usedIdx 尽量不重复。 */
 function pickPairs() {
   const ratio = LEVEL_MIX_RATIO[activeLevel] || LEVEL_MIX_RATIO.all;
   const difficulties = Object.keys(ratio);
-  const pool = WORDS.map((word, index) => ({ word, index }));
+  const pool = wordPool().map((word, index) => ({ word, index }));
   const byDiff = {};
   difficulties.forEach(d => {
     byDiff[d] = pool.filter(item => difficultyOf(item.word) === d);

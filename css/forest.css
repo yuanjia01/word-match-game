@@ -266,3 +266,149 @@ header, .status, .board { position: relative; z-index: 2; }
   #forestScene .mist,
   #forestScene .animal svg { animation: none !important; }
 }
+
+/* ============================================================
+   导入单词本（阶段1·T8 / AIL-14）：主页入口 + 词库切换 + 导入页
+   仅样式，不含任何逻辑
+   ============================================================ */
+
+/* 主页：词库选择 + 导入入口 */
+.home-extra {
+  margin-top: clamp(18px, 3vw, 30px);
+  display: flex; flex-direction: column; align-items: center; gap: 14px;
+  width: min(94vw, 900px);
+}
+.word-source {
+  display: flex; align-items: center; gap: 10px;
+  background: linear-gradient(rgba(255, 255, 255, .5), rgba(255, 255, 255, .3));
+  border: 2px solid rgba(95, 64, 32, .22);
+  border-radius: 999px;
+  padding: 8px 14px;
+  box-shadow: 0 5px 14px rgba(74, 53, 24, .14);
+}
+.word-source-label {
+  font-weight: 800; color: #4a3518;
+  font-size: clamp(14px, 1.8vw, 17px);
+  letter-spacing: 1px;
+}
+.word-source-btn {
+  border: 2px solid #8fae5a; border-radius: 999px;
+  padding: 6px 16px;
+  background: #fdf6dd; color: #4a3518;
+  font-weight: 800; font-family: inherit;
+  font-size: clamp(13px, 1.6vw, 15px);
+  cursor: pointer; touch-action: manipulation;
+}
+.word-source-btn.active {
+  background: linear-gradient(180deg, #7fae6b, #47723f);
+  color: #fff; border-color: #47723f;
+}
+.home-import-btn {
+  border: 2px solid #7a4c2a; border-radius: 999px;
+  padding: 12px 36px;
+  background: linear-gradient(180deg, #d3a66b, #b98244);
+  color: #fff;
+  font-size: clamp(16px, 2vw, 19px);
+  font-weight: 900; letter-spacing: 3px;
+  box-shadow: 0 6px 16px rgba(74, 53, 24, .28), inset 0 2px 4px rgba(255, 255, 255, .4);
+  cursor: pointer; touch-action: manipulation; font-family: inherit;
+}
+.home-import-btn:active { transform: translateY(2px); }
+
+/* 导入页 */
+.import-box {
+  width: min(94vw, 640px);
+  margin-top: clamp(16px, 3vw, 28px);
+  padding: clamp(16px, 2.4vw, 22px);
+  border: 2px solid rgba(95, 64, 32, .22);
+  border-radius: 20px;
+  background: linear-gradient(rgba(255, 255, 255, .55), rgba(255, 255, 255, .32));
+  box-shadow: 0 8px 20px rgba(74, 53, 24, .12);
+}
+.import-label {
+  display: block;
+  margin: 10px 0 8px;
+  font-weight: 800; color: #4a3518;
+  font-size: clamp(14px, 1.8vw, 16px);
+  letter-spacing: 1px;
+}
+#importTextArea {
+  width: 100%;
+  min-height: 150px;
+  padding: 12px;
+  border: 2px solid #8fae5a; border-radius: 14px;
+  background: #fdf6dd; color: #4a3518;
+  font-family: inherit;
+  font-size: clamp(14px, 1.8vw, 16px);
+  resize: vertical; outline: none;
+}
+#importTextArea:focus { box-shadow: 0 0 0 4px rgba(143, 174, 90, .35); }
+#importFileInput {
+  display: block;
+  margin: 6px 0;
+  color: #5b4218;
+  font-family: inherit;
+  font-size: clamp(13px, 1.6vw, 15px);
+}
+.import-btn {
+  display: block;
+  margin: 14px auto 0;
+  border: none; border-radius: 999px;
+  padding: 12px 44px;
+  background: linear-gradient(180deg, #f6c453, #e0921f);
+  color: #5b4218;
+  font-weight: 900; letter-spacing: 3px;
+  font-size: clamp(16px, 2vw, 19px);
+  box-shadow: 0 8px 20px rgba(224, 146, 31, .4), inset 0 2px 4px rgba(255, 255, 255, .55);
+  cursor: pointer; touch-action: manipulation; font-family: inherit;
+}
+.import-btn:active { transform: translateY(2px); }
+.import-btn:disabled { opacity: .6; cursor: default; }
+.import-result {
+  margin: 14px 0 4px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: clamp(13px, 1.7vw, 15px);
+  font-weight: 700;
+  line-height: 1.5;
+  word-break: break-word;
+}
+.import-result.ok { background: rgba(127, 174, 107, .25); color: #2f5c1e; }
+.import-result.err { background: rgba(224, 146, 31, .18); color: #7a4c2a; }
+
+/* 已导入单词列表 */
+.import-list-head {
+  display: flex; justify-content: space-between; align-items: center;
+  font-weight: 900; color: #3f6b2f;
+  font-size: clamp(15px, 1.9vw, 18px);
+  letter-spacing: 1px;
+}
+.clear-btn {
+  border: 2px solid #c08a4f; border-radius: 999px;
+  padding: 6px 16px;
+  background: linear-gradient(180deg, #fbf3cf, #e9d48f);
+  color: #7a4c2a;
+  font-weight: 800; font-family: inherit;
+  font-size: clamp(12px, 1.5vw, 14px);
+  cursor: pointer; touch-action: manipulation;
+}
+.clear-btn:active { transform: translateY(2px); }
+.user-word-list {
+  list-style: none;
+  margin-top: 12px;
+  max-height: 240px; overflow-y: auto;
+}
+.user-word-list li {
+  display: flex; justify-content: space-between; gap: 12px;
+  padding: 7px 10px;
+  border-bottom: 1px dashed rgba(95, 64, 32, .18);
+  font-size: clamp(14px, 1.8vw, 16px);
+  font-weight: 700;
+}
+.user-word-list .uw-en { color: #3f6b2f; }
+.user-word-list .uw-cn { color: #7a4c2a; }
+.user-word-list .user-word-empty {
+  justify-content: center;
+  color: #7a643c; font-weight: 600;
+  border-bottom: none;
+}
