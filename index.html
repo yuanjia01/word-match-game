@@ -30,6 +30,29 @@
   </div>
 </main>
 
+<!-- 模式选择（阶段1·T7/AIL-13）：Easy 正向计时 / Hard 限时，两种玩法共用 -->
+<main id="screen-mode" class="screen hidden">
+  <header>
+    <h2>选择模式</h2>
+    <p class="home-subtitle">Easy 正向计时 · Hard 限时挑战（超时重开本关）</p>
+  </header>
+  <div class="mode-cards">
+    <button class="mode-card" id="modeEasyBtn" aria-label="选择 Easy 模式">
+      <span class="mode-emoji">E</span>
+      <span class="mode-name">Easy</span>
+      <span class="mode-desc">正向计时，轻松闯关</span>
+    </button>
+    <button class="mode-card" id="modeHardBtn" aria-label="选择 Hard 模式">
+      <span class="mode-emoji">H</span>
+      <span class="mode-name">Hard</span>
+      <span class="mode-desc">限时挑战，超时重开本关</span>
+    </button>
+  </div>
+  <div class="screen-footer">
+    <button class="back-btn" id="modeBackBtn">返回</button>
+  </div>
+</main>
+
 <!-- 年级选择（单词消消乐进入前） -->
 <main id="screen-grade" class="screen hidden">
   <header>
@@ -66,7 +89,7 @@
   <div class="board" id="board"></div>
   <div class="overlay hidden" id="overlay">
     <div class="card">
-      <h2>恭喜你挑战成功！</h2>
+      <h2 id="overlayTitle">恭喜你挑战成功！</h2>
       <p id="finalTime">用时 00:00</p>
       <button id="nextBtn">继续挑战</button>
     </div>
@@ -88,7 +111,7 @@
   <div class="board" id="phoneticBoard"></div>
   <div class="overlay hidden" id="phoneticOverlay">
     <div class="card">
-      <h2>恭喜你挑战成功！</h2>
+      <h2 id="phoneticOverlayTitle">恭喜你挑战成功！</h2>
       <p id="phoneticFinalTime">用时 00:00</p>
       <button id="phoneticNextBtn">再来一局</button>
     </div>

@@ -1,10 +1,12 @@
-/* 入口路由（阶段1·T2 / AIL-8）：玩法选择、年级选择、玩法间切换 */
+/* 入口路由（阶段1·T2 / AIL-8）：玩法选择、模式选择、年级选择、玩法间切换
+   阶段1·T7（AIL-13）：新增 Easy/Hard 模式选择，进入游戏前选定、进入后不可切换 */
 (function () {
   'use strict';
 
   /* 页面区块 */
   var screens = {
     home: document.getElementById('screen-home'),
+    mode: document.getElementById('screen-mode'),
     grade: document.getElementById('screen-grade'),
     word: document.getElementById('screen-word'),
     phonetic: document.getElementById('screen-phonetic')
@@ -16,6 +18,11 @@
 
   /* 当前所选年级（grade3~grade9 或 all） */
   var selectedGrade = 'all';
+  /* 当前所选模式（easy/hard，T7/AIL-13）：进入游戏前通过 window.gameMode 传给玩法模块 */
+  var selectedMode = 'easy';
+  /* 模式选择后要进入的玩法（word/phonetic） */
+  var pendingGame = 'word';
+  window.gameMode = selectedMode;
 
   /* 展示指定页面 */
   function showScreen(name) {
@@ -96,6 +103,24 @@
     }
   }
 
+  /* 选择玩法后先进入模式选择页（T7/AIL-13） */
+  function chooseGame(game) {
+    pendingGame = game;
+    showScreen('mode');
+  }
+
+  /* 选定模式后进入对应流程：单词版 -> 年级选择，音标版 -> 直接开玩 */
+  function chooseMode(mode) {
+    selectedMode = mode;
+    window.gameMode = mode;
+    if (pendingGame === 'word') {
+      buildGradeGrid();
+      showScreen('grade');
+    } else {
+      enterPhonetic();
+    }
+  }
+
   /* 返回主页：先停止两个玩法的计时器并清零，避免跨页面残留计时（AIL-11/T5 双玩法状态串扰） */
   function goHome() {
     if (typeof window.stopMatchTimer === 'function') window.stopMatchTimer();
@@ -105,11 +130,21 @@
 
   /* 事件绑定 */
   document.getElementById('modeWordBtn').addEventListener('click', function () {
-    buildGradeGrid();
-    showScreen('grade');
+    chooseGame('word');
   });
-  document.getElementById('modePhoneticBtn').addEventListener('click', enterPhonetic);
-  document.getElementById('gradeBackBtn').addEventListener('click', goHome);
+  document.getElementById('modePhoneticBtn').addEventListener('click', function () {
+    chooseGame('phonetic');
+  });
+  document.getElementById('modeEasyBtn').addEventListener('click', function () {
+    chooseMode('easy');
+  });
+  document.getElementById('modeHardBtn').addEventListener('click', function () {
+    chooseMode('hard');
+  });
+  document.getElementById('modeBackBtn').addEventListener('click', goHome);
+  document.getElementById('gradeBackBtn').addEventListener('click', function () {
+    showScreen('mode');
+  });
   document.getElementById('wordBackBtn').addEventListener('click', goHome);
   document.getElementById('phoneticBackBtn').addEventListener('click', goHome);
 

@@ -9,6 +9,7 @@
 
   var board = document.getElementById('phoneticBoard');
   var overlay = document.getElementById('phoneticOverlay');
+  var overlayTitle = document.getElementById('phoneticOverlayTitle');
   var finalTimeEl = document.getElementById('phoneticFinalTime');
   var timerEl = document.getElementById('phoneticTimer');
   var roundLabel = document.getElementById('phoneticRoundLabel');
@@ -22,6 +23,14 @@
   var startAt = 0;
   var timerId = null;
 
+  /* 双模式状态（T7/AIL-13）：hard 限时倒计时，超时重开本关 */
+  var hardMode = false;
+  var timeLimit = 60;
+  var timedOut = false;
+  var hardDeadline = 0;
+  /* 当前生效模式（easy/hard），模式变化时重置本关 */
+  var currentMode = null;
+
   /* 毫秒格式化为 MM:SS */
   function fmt(ms) {
     var s = Math.floor(ms / 1000);
@@ -29,10 +38,36 @@
     return String(m).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
   }
 
-  /* 开始计时 */
+  /* 倒计时显示：剩余秒数向上取整，避免过早显示 00:00 */
+  function fmtLeft(ms) {
+    var s = Math.ceil(ms / 1000);
+    var m = Math.floor(s / 60);
+    return String(m).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+  }
+
+  /* 计时文本：Hard 显示剩余倒计时，Easy 显示正向用时 */
+  function timerText() {
+    return hardMode ? '剩余 ' + fmt(timeLimit * 1000) : '用时 00:00';
+  }
+
+  /* 开始计时：Easy 正向计时；Hard 倒计时，到点弹窗并重开本关 */
   function startTimer() {
     startAt = Date.now();
     clearInterval(timerId);
+    if (hardMode) {
+      hardDeadline = startAt + timeLimit * 1000;
+      timerEl.textContent = '剩余 ' + fmt(timeLimit * 1000);
+      timerId = setInterval(function () {
+        var left = hardDeadline - Date.now();
+        if (left <= 0) {
+          stopTimer();
+          showTimeout();
+          return;
+        }
+        timerEl.textContent = '剩余 ' + fmtLeft(left);
+      }, 250);
+      return;
+    }
     timerId = setInterval(function () {
       timerEl.textContent = '用时 ' + fmt(Date.now() - startAt);
     }, 250);
@@ -44,9 +79,30 @@
   /* 胜利弹窗（与单词版一致） */
   function showWin() {
     stopTimer();
+    timedOut = false;
+    overlayTitle.textContent = '恭喜你挑战成功！';
     finalTimeEl.textContent = '本次用时：' + fmt(Date.now() - startAt);
+    nextBtn.textContent = '再来一局';
     overlay.classList.remove('hidden');
     playWin();
+  }
+
+  /* Hard 模式超时（T7/AIL-13）：弹窗提示"时间到"，点击后重开本关（关数不前进） */
+  function showTimeout() {
+    timedOut = true;
+    overlayTitle.textContent = '时间到';
+    finalTimeEl.textContent = '未在限定时间内完成，本关重新开始';
+    nextBtn.textContent = '再来一次';
+    overlay.classList.remove('hidden');
+    playFail();
+  }
+
+  /* 重开本关：重置棋盘与计时，关数不前进（复用本关音标，重新洗牌） */
+  function restartCurrentRound() {
+    timedOut = false;
+    startAt = 0;
+    timerEl.textContent = timerText();
+    buildBoard(pairs);
   }
 
   /* 抽取本关 9 个音标（不重复），不足时重置已用集合（复用 match-core 的 shuffle） */
@@ -141,24 +197,36 @@
     }
   });
 
-  /* 再来一局 */
+  /* 再来一局 / 超时重开（T7/AIL-13：超时后关数不前进） */
   nextBtn.addEventListener('click', function () {
     overlay.classList.add('hidden');
+    if (timedOut) {
+      restartCurrentRound();
+      return;
+    }
     round++;
     roundLabel.textContent = '第 ' + (round + 1) + ' 关';
     startAt = 0;
-    timerEl.textContent = '用时 00:00';
+    timerEl.textContent = timerText();
     buildBoard(pickPairs());
   });
 
-  /* 入口（js/app.js 路由调用）：首次进入构建第一关，重复进入保持当前进度 */
+  /* 入口（js/app.js 路由调用）：首次进入构建第一关，重复进入保持当前进度；
+     模式变化时重置本关（T7/AIL-13） */
   function initPhoneticGame() {
     if (typeof PHONETICS === 'undefined') return;
     setSoundVariant('phonetic'); /* T6：音标玩法使用木鱼/水滴音色 */
-    if (!board.children.length) {
+    var mode = window.gameMode === 'hard' ? 'hard' : 'easy';
+    if (!board.children.length || mode !== currentMode) {
+      currentMode = mode;
+      hardMode = mode === 'hard';
+      timeLimit = 60;
+      timedOut = false;
       round = 0;
+      stopTimer();
+      startAt = 0;
       roundLabel.textContent = '第 1 关';
-      timerEl.textContent = '用时 00:00';
+      timerEl.textContent = timerText();
       buildBoard(pickPairs());
     }
   }
@@ -167,7 +235,8 @@
   window.stopPhoneticTimer = function () {
     stopTimer();
     startAt = 0;
-    timerEl.textContent = '用时 00:00';
+    timedOut = false;
+    timerEl.textContent = timerText();
   };
 
   window.initPhoneticGame = initPhoneticGame;
