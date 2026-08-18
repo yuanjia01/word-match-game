@@ -92,6 +92,17 @@
     allBtn.dataset.grade = 'all';
     allBtn.addEventListener('click', function () { startWordGame('all'); });
     gradeGrid.appendChild(allBtn);
+    /* 自定义单词本（T8/AIL-14）：有导入词时在年级页提供「单词本」入口，直接进入自定义词库游戏 */
+    if (window.USER_WORDS && window.USER_WORDS.hasWords()) {
+      var customBtn = document.createElement('button');
+      customBtn.className = 'grade-btn grade-custom';
+      customBtn.textContent = '单词本';
+      customBtn.dataset.grade = 'custom';
+      customBtn.addEventListener('click', function () {
+        startCustomWordGame();
+      });
+      gradeGrid.appendChild(customBtn);
+    }
   }
 
   /* 进入单词消消乐：设置年级并初始化游戏 */
@@ -117,6 +128,8 @@
       showScreen('grade');
       return;
     }
+    wordSource = 'custom';
+    window.wordSource = wordSource;
     selectedGrade = 'all';
     difficultySelect.value = 'all';
     difficultySelect.dispatchEvent(new Event('change'));
