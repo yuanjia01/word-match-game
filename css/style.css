@@ -227,6 +227,7 @@ h1 {
 }
 .grade-btn:active { transform: translateY(2px); }
 .grade-btn.grade-all { background: linear-gradient(180deg, #7FCF7A, #3DA35D); }
+.grade-btn.grade-custom { background: linear-gradient(180deg, #7FA7E8, #3D6FD8); }
 .screen-footer { margin-top: clamp(24px, 4vw, 40px); }
 .back-btn {
   padding: 10px 30px;
