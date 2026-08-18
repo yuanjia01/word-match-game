@@ -9,12 +9,24 @@
     mode: document.getElementById('screen-mode'),
     grade: document.getElementById('screen-grade'),
     word: document.getElementById('screen-word'),
-    phonetic: document.getElementById('screen-phonetic')
+    phonetic: document.getElementById('screen-phonetic'),
+    import: document.getElementById('screen-import')
   };
   var gradeGrid = document.getElementById('gradeGrid');
   var difficultySelect = document.getElementById('difficultySelect');
   var roundLabel = document.getElementById('roundLabel');
   var phoneticPlaceholder = document.getElementById('phoneticPlaceholder');
+  /* 导入单词本（T8/AIL-14）相关元素 */
+  var importTextArea = document.getElementById('importTextArea');
+  var importFileInput = document.getElementById('importFileInput');
+  var importBtn = document.getElementById('importBtn');
+  var importResult = document.getElementById('importResult');
+  var userWordList = document.getElementById('userWordList');
+  var userWordCount = document.getElementById('userWordCount');
+  var clearWordsBtn = document.getElementById('clearWordsBtn');
+  var wordSourceWrap = document.getElementById('wordSourceWrap');
+  var srcBuiltinBtn = document.getElementById('srcBuiltinBtn');
+  var srcCustomBtn = document.getElementById('srcCustomBtn');
 
   /* 当前所选年级（grade3~grade9 或 all） */
   var selectedGrade = 'all';
@@ -22,7 +34,10 @@
   var selectedMode = 'easy';
   /* 模式选择后要进入的玩法（word/phonetic） */
   var pendingGame = 'word';
+  /* 当前词库来源（T8/AIL-14）：builtin=内置词库，custom=自定义词库，传给 match-game.js */
+  var wordSource = 'builtin';
   window.gameMode = selectedMode;
+  window.wordSource = wordSource;
 
   /* 展示指定页面 */
   function showScreen(name) {
@@ -92,6 +107,126 @@
     showScreen('word');
   }
 
+  /* 使用自定义词库直接进入单词消消乐（T8/AIL-14）：跳过年级选择，视同全部词库
+     无自定义词时回退到内置词库的年级选择流程 */
+  function startCustomWordGame() {
+    if (!(window.USER_WORDS && window.USER_WORDS.hasWords())) {
+      wordSource = 'builtin';
+      window.wordSource = wordSource;
+      buildGradeGrid();
+      showScreen('grade');
+      return;
+    }
+    selectedGrade = 'all';
+    difficultySelect.value = 'all';
+    difficultySelect.dispatchEvent(new Event('change'));
+    roundLabel.textContent = '自定义词库 · 第 1 关';
+    showScreen('word');
+  }
+
+  /* 刷新主页词库选择区：有自定义词库时显示并可切换（T8/AIL-14） */
+  function refreshWordSourceUI() {
+    var has = !!(window.USER_WORDS && window.USER_WORDS.hasWords());
+    wordSourceWrap.classList.toggle('hidden', !has);
+    if (!has && wordSource === 'custom') wordSource = 'builtin';
+    window.wordSource = wordSource;
+    srcBuiltinBtn.classList.toggle('active', wordSource === 'builtin');
+    srcCustomBtn.classList.toggle('active', wordSource === 'custom');
+  }
+
+  /* 渲染已导入单词列表（T8/AIL-14） */
+  function renderUserWords() {
+    var words = window.USER_WORDS ? window.USER_WORDS.get() : [];
+    userWordCount.textContent = words.length;
+    userWordList.innerHTML = '';
+    if (!words.length) {
+      var empty = document.createElement('li');
+      empty.className = 'user-word-empty';
+      empty.textContent = '尚未导入任何单词';
+      userWordList.appendChild(empty);
+      return;
+    }
+    words.forEach(function (w) {
+      var li = document.createElement('li');
+      var en = document.createElement('span');
+      en.className = 'uw-en';
+      en.textContent = w[0];
+      var cn = document.createElement('span');
+      cn.className = 'uw-cn';
+      cn.textContent = w[1];
+      li.appendChild(en);
+      li.appendChild(cn);
+      userWordList.appendChild(li);
+    });
+  }
+
+  /* 展示导入结果提示 */
+  function showImportResult(msg, ok) {
+    importResult.textContent = msg;
+    importResult.classList.remove('hidden');
+    importResult.classList.toggle('ok', !!ok);
+    importResult.classList.toggle('err', !ok);
+  }
+
+  /* 执行导入：优先读取所选文件，否则读取粘贴文本（T8/AIL-14） */
+  function doImport() {
+    var file = importFileInput.files && importFileInput.files[0];
+    if (file) {
+      var reader = new FileReader();
+      reader.onload = function () { runImport(String(reader.result || '')); };
+      reader.readAsText(file, 'utf-8');
+      return;
+    }
+    runImport(importTextArea.value);
+  }
+
+  /* 运行导入：解析 + 补释义 + 保存，展示成功/跳过统计 */
+  function runImport(text) {
+    if (typeof window.UserWordsImport === 'undefined') {
+      showImportResult('导入模块未加载', false);
+      return;
+    }
+    if (!text.trim()) {
+      showImportResult('请先粘贴内容或选择 .txt 文件', false);
+      return;
+    }
+    importBtn.disabled = true;
+    importBtn.textContent = '导入中…';
+    window.UserWordsImport.import(text).then(function (res) {
+      importBtn.disabled = false;
+      importBtn.textContent = '开始导入';
+      var skippedMsg = '';
+      if (res.skipped.length) {
+        skippedMsg = '跳过 ' + res.skipped.length + ' 行：' + res.skipped.slice(0, 5)
+          .map(function (s) { return s.reason + (s.line ? '（' + s.line + '）' : ''); })
+          .join('；');
+        if (res.skipped.length > 5) skippedMsg += ' 等';
+      }
+      if (res.imported > 0) {
+        showImportResult('成功导入 ' + res.imported + ' 个单词。' + (res.skipped.length ? ' ' + skippedMsg : ''), true);
+      } else {
+        showImportResult('没有导入任何单词。' + (res.skipped.length ? ' ' + skippedMsg : ''), false);
+      }
+      renderUserWords();
+      refreshWordSourceUI();
+    }).catch(function () {
+      importBtn.disabled = false;
+      importBtn.textContent = '开始导入';
+      showImportResult('导入失败，请重试', false);
+    });
+  }
+
+  /* 清空自定义词库（T8/AIL-14） */
+  function clearUserWords() {
+    if (!(window.USER_WORDS && window.USER_WORDS.hasWords())) return;
+    window.USER_WORDS.clear();
+    renderUserWords();
+    refreshWordSourceUI();
+    importTextArea.value = '';
+    importFileInput.value = '';
+    showImportResult('已清空自定义词库', true);
+  }
+
   /* 进入音标消消乐：玩法模块（AIL-9/T3）提供 initPhoneticGame()，缺失时显示占位 */
   function enterPhonetic() {
     showScreen('phonetic');
@@ -109,13 +244,18 @@
     showScreen('mode');
   }
 
-  /* 选定模式后进入对应流程：单词版 -> 年级选择，音标版 -> 直接开玩 */
+  /* 选定模式后进入对应流程：单词版 -> 年级选择，音标版 -> 直接开玩
+     T8/AIL-14：选中自定义词库时单词版跳过年级选择直接开玩 */
   function chooseMode(mode) {
     selectedMode = mode;
     window.gameMode = mode;
     if (pendingGame === 'word') {
-      buildGradeGrid();
-      showScreen('grade');
+      if (wordSource === 'custom') {
+        startCustomWordGame();
+      } else {
+        buildGradeGrid();
+        showScreen('grade');
+      }
     } else {
       enterPhonetic();
     }
@@ -125,6 +265,7 @@
   function goHome() {
     if (typeof window.stopMatchTimer === 'function') window.stopMatchTimer();
     if (typeof window.stopPhoneticTimer === 'function') window.stopPhoneticTimer();
+    refreshWordSourceUI();
     showScreen('home');
   }
 
@@ -147,15 +288,48 @@
   });
   document.getElementById('wordBackBtn').addEventListener('click', goHome);
   document.getElementById('phoneticBackBtn').addEventListener('click', goHome);
+  document.getElementById('importBackBtn').addEventListener('click', goHome);
 
-  /* 「继续挑战」后 match-game.js 会把标签重置为难度档名，这里按所选年级重新覆盖 */
+  /* 词库来源切换（T8/AIL-14） */
+  srcBuiltinBtn.addEventListener('click', function () {
+    wordSource = 'builtin';
+    window.wordSource = wordSource;
+    refreshWordSourceUI();
+  });
+  srcCustomBtn.addEventListener('click', function () {
+    wordSource = 'custom';
+    window.wordSource = wordSource;
+    refreshWordSourceUI();
+  });
+
+  /* 导入单词本（T8/AIL-14） */
+  document.getElementById('importWordsBtn').addEventListener('click', function () {
+    showScreen('import');
+    renderUserWords();
+  });
+  importBtn.addEventListener('click', doImport);
+  clearWordsBtn.addEventListener('click', clearUserWords);
+  importFileInput.addEventListener('change', function () {
+    if (importFileInput.files && importFileInput.files.length) importTextArea.value = '';
+    importResult.classList.add('hidden');
+  });
+  importTextArea.addEventListener('input', function () {
+    if (importFileInput.files && importFileInput.files.length) importFileInput.value = '';
+  });
+
+  /* 「继续挑战」后 match-game.js 会把标签重置为难度档名，这里按所选年级/词库重新覆盖 */
   document.getElementById('nextBtn').addEventListener('click', function () {
+    var m = /第 (\d+) 关/.exec(roundLabel.textContent);
+    if (wordSource === 'custom') {
+      roundLabel.textContent = '自定义词库 · 第 ' + (m ? m[1] : 1) + ' 关';
+      return;
+    }
     var n = gradeNumber(selectedGrade);
     if (n === null) return;
-    var m = /第 (\d+) 关/.exec(roundLabel.textContent);
     roundLabel.textContent = n + ' 年级 · 第 ' + (m ? m[1] : 1) + ' 关';
   });
 
-  /* 初始化：默认展示主页 */
+  /* 初始化：刷新词库选择区，默认展示主页 */
+  refreshWordSourceUI();
   showScreen('home');
 })();

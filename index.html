@@ -28,6 +28,15 @@
       <span class="mode-desc">国际音标配对消除</span>
     </button>
   </div>
+  <!-- 自定义词库入口（阶段1·T8 / AIL-14）：有自定义词库时显示词库切换，可进入导入页 -->
+  <div class="home-extra">
+    <div class="word-source hidden" id="wordSourceWrap" aria-label="词库选择">
+      <span class="word-source-label">词库选择</span>
+      <button class="word-source-btn active" id="srcBuiltinBtn" aria-label="使用内置词库">内置词库</button>
+      <button class="word-source-btn" id="srcCustomBtn" aria-label="使用自定义词库">自定义词库</button>
+    </div>
+    <button class="home-import-btn" id="importWordsBtn" aria-label="导入单词本">导入单词本</button>
+  </div>
 </main>
 
 <!-- 模式选择（阶段1·T7/AIL-13）：Easy 正向计时 / Hard 限时，两种玩法共用 -->
@@ -118,9 +127,37 @@
   </div>
 </main>
 
+<!-- 导入单词本（阶段1·T8 / AIL-14）：粘贴文本或上传 .txt，三种格式，导入后主页可切换自定义词库 -->
+<main id="screen-import" class="screen hidden">
+  <header>
+    <h2>导入单词本</h2>
+    <p class="home-subtitle">支持三种格式，导入后可在主页切换「自定义词库」进行游戏</p>
+  </header>
+  <div class="import-box">
+    <label class="import-label" for="importTextArea">方式一：粘贴文本</label>
+    <textarea id="importTextArea" rows="8" placeholder="每行一个单词，如：&#10;apple&#10;banana, 香蕉&#10;cat 猫&#10;&#10;或粘贴 JSON 数组，如：&#10;[{&quot;word&quot;:&quot;apple&quot;,&quot;cn&quot;:&quot;苹果&quot;}]"></textarea>
+    <label class="import-label" for="importFileInput">方式二：上传 .txt 文件</label>
+    <input type="file" id="importFileInput" accept=".txt,text/plain" />
+    <button class="import-btn" id="importBtn">开始导入</button>
+    <p class="import-result hidden" id="importResult"></p>
+  </div>
+  <div class="import-box">
+    <div class="import-list-head">
+      <span>已导入单词（<span id="userWordCount">0</span> 个）</span>
+      <button class="clear-btn" id="clearWordsBtn" aria-label="清空词库">清空词库</button>
+    </div>
+    <ul class="user-word-list" id="userWordList"></ul>
+  </div>
+  <div class="screen-footer">
+    <button class="back-btn" id="importBackBtn">返回主页</button>
+  </div>
+</main>
+
 <script src="js/data/words.js"></script>
 <script src="js/data/phonetics.js"></script>
 <script src="js/data/grade-words.js"></script>
+<script src="js/data/user-words.js"></script>
+<script src="js/user-words.js"></script>
 <script src="js/match-core.js"></script>
 <script src="js/audio.js"></script>
 <script src="js/speech.js"></script>
