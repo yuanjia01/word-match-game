@@ -30,6 +30,8 @@
   var hardDeadline = 0;
   /* 当前生效模式（easy/hard），模式变化时重置本关 */
   var currentMode = null;
+  var lessonMode = false;
+  var activeLessonId = null;
 
   /* 毫秒格式化为 MM:SS */
   function fmt(ms) {
@@ -80,9 +82,9 @@
   function showWin() {
     stopTimer();
     timedOut = false;
-    overlayTitle.textContent = '恭喜你挑战成功！';
+    overlayTitle.textContent = lessonMode ? '本课测验通过！' : '恭喜你挑战成功！';
     finalTimeEl.textContent = '本次用时：' + fmt(Date.now() - startAt);
-    nextBtn.textContent = '再来一局';
+    nextBtn.textContent = lessonMode ? '完成学习' : '再来一局';
     overlay.classList.remove('hidden');
     playWin();
   }
@@ -125,7 +127,7 @@
     var tiles = [];
     list.forEach(function (p, i) {
       tiles.push({ key: i, type: 'ph', text: p.symbol });
-      tiles.push({ key: i, type: 'ex', text: p.example, cn: p.cn });
+      tiles.push({ key: i, type: 'ex', text: p.example, ipa: p.ipa, segments: p.segments });
     });
     shuffle(tiles);
     tiles.forEach(function (t) {
@@ -135,17 +137,22 @@
       el.dataset.type = t.type;
       el.dataset.text = t.text;
       if (t.type === 'ex') {
-        /* 示例词 + 中文说明（两行展示） */
+        /* 示例词 + 分段音标；点击后逐段拼读，再合成整词。 */
         el.style.flexDirection = 'column';
         var main = document.createElement('span');
         main.textContent = t.text;
         var sub = document.createElement('span');
-        sub.textContent = t.cn;
-        sub.style.display = 'block';
-        sub.style.fontSize = '0.55em';
-        sub.style.fontWeight = '700';
-        sub.style.opacity = '.8';
-        sub.style.marginTop = '3px';
+        sub.className = 'phonetic-bubble-ipa';
+        sub.appendChild(document.createTextNode('/'));
+        t.segments.forEach(function (symbol, index) {
+          var part = document.createElement('span');
+          part.className = 'phonetic-part';
+          part.dataset.segment = index;
+          part.textContent = symbol;
+          sub.appendChild(part);
+          if (index < t.segments.length - 1) sub.appendChild(document.createTextNode(' '));
+        });
+        sub.appendChild(document.createTextNode('/'));
         el.appendChild(main);
         el.appendChild(sub);
       } else {
@@ -171,7 +178,29 @@
       selected = null;
       return;
     }
-    if (el.dataset.type === 'ph') speakPhonetic(el.dataset.text);
+    var speechPromise;
+    el.classList.add('speaking');
+    if (el.dataset.type === 'ph') {
+      speechPromise = speakPhonetic(el.dataset.text);
+    } else {
+      var wordItem = pairs[Number(el.dataset.key)];
+      var parts = el.querySelectorAll('.phonetic-part');
+      speechPromise = speakPhoneticWord(wordItem, function (index) {
+        parts.forEach(function (part, partIndex) {
+          part.classList.toggle('active', index === -2 || index === partIndex);
+        });
+      });
+    }
+    speechPromise = Promise.resolve(speechPromise).then(function (result) {
+      el.classList.remove('speaking');
+      if (parts) {
+        parts.forEach(function (part) { part.classList.remove('active'); });
+      }
+      return result;
+    }, function () {
+      el.classList.remove('speaking');
+      return false;
+    });
     if (!selected) {
       selected = el;
       el.classList.add('selected');
@@ -180,16 +209,19 @@
     var a = selected, b = el;
     selected = null;
     if (a.dataset.key === b.dataset.key && a.dataset.type !== b.dataset.type) {
-      playSuccess();
       a.classList.remove('selected');
       a.classList.add('gone');
       b.classList.add('gone');
       matched++;
-      if (matched === pairs.length) showWin();
+      var won = matched === pairs.length;
+      speechPromise.then(function () {
+        playSuccess();
+        if (won) showWin();
+      });
     } else {
-      playFail();
       a.classList.add('wrong');
       b.classList.add('wrong');
+      speechPromise.then(function () { playFail(); });
       setTimeout(function () {
         a.classList.remove('selected', 'wrong');
         b.classList.remove('wrong');
@@ -204,6 +236,16 @@
       restartCurrentRound();
       return;
     }
+    if (lessonMode) {
+      var completedLessonId = activeLessonId;
+      lessonMode = false;
+      activeLessonId = null;
+      window.phoneticLessonActive = false;
+      if (typeof window.finishPhoneticLessonTest === 'function') {
+        window.finishPhoneticLessonTest(completedLessonId);
+      }
+      return;
+    }
     round++;
     roundLabel.textContent = '第 ' + (round + 1) + ' 关';
     startAt = 0;
@@ -216,6 +258,10 @@
   function initPhoneticGame() {
     if (typeof PHONETICS === 'undefined') return;
     setSoundVariant('phonetic'); /* T6：音标玩法使用木鱼/水滴音色 */
+    lessonMode = false;
+    activeLessonId = null;
+    window.phoneticLessonActive = false;
+    document.getElementById('phoneticBackBtn').textContent = '返回主页';
     var mode = window.gameMode === 'hard' ? 'hard' : 'easy';
     if (!board.children.length || mode !== currentMode) {
       currentMode = mode;
@@ -237,6 +283,29 @@
     startAt = 0;
     timedOut = false;
     timerEl.textContent = timerText();
+  };
+
+  /* 学习模块调用：只使用本课音标生成一局 Easy 测验。 */
+  window.startPhoneticLessonTest = function (lesson) {
+    if (!lesson || typeof PHONETICS === 'undefined') return;
+    var lessonPairs = lesson.symbols.map(function (symbol) {
+      return PHONETICS.find(function (item) { return item.symbol === symbol; });
+    }).filter(Boolean);
+    setSoundVariant('phonetic');
+    lessonMode = true;
+    activeLessonId = lesson.id;
+    window.phoneticLessonActive = true;
+    currentMode = 'lesson:' + lesson.id;
+    hardMode = false;
+    timedOut = false;
+    round = 0;
+    stopTimer();
+    startAt = 0;
+    overlay.classList.add('hidden');
+    roundLabel.textContent = lesson.title + ' · 消消乐测验';
+    timerEl.textContent = timerText();
+    document.getElementById('phoneticBackBtn').textContent = '返回学习';
+    buildBoard(lessonPairs);
   };
 
   window.initPhoneticGame = initPhoneticGame;

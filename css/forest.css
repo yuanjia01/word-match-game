@@ -79,7 +79,7 @@ h1 {
 .card p { color: #5b4218; }
 
 /* ---------- 继续挑战按钮：蜂蜜金 ---------- */
-#nextBtn {
+#nextBtn, #phoneticNextBtn {
   background: linear-gradient(180deg, #f6c453, #e0921f);
   box-shadow: 0 8px 20px rgba(224, 146, 31, .45), inset 0 2px 4px rgba(255, 255, 255, .55);
 }
@@ -123,13 +123,100 @@ header, .status, .board { position: relative; z-index: 2; }
   pointer-events: none;
 }
 
+/* 完整树冠：左右树干分别向树冠内伸展，避免只剩两根木柱。 */
+#forestScene .tree-canopy {
+  position: absolute;
+  top: -10vh;
+  width: 34vw;
+  height: 36vh;
+  z-index: 1;
+  overflow: hidden;
+  border-radius: 46% 54% 44% 56% / 58% 45% 55% 42%;
+  background:
+    radial-gradient(circle at 26% 28%, rgba(210, 229, 153, .42) 0 4%, transparent 5%),
+    radial-gradient(circle at 67% 54%, rgba(191, 219, 132, .3) 0 5%, transparent 6%),
+    radial-gradient(ellipse at 34% 30%, #7eb068 0%, #629a55 37%, transparent 38%),
+    radial-gradient(ellipse at 70% 64%, #4a8145 0%, #3f753e 42%, transparent 43%),
+    linear-gradient(145deg, #75aa61 0%, #4f8949 58%, #397039 100%);
+  box-shadow: inset -22px -18px 32px rgba(39, 88, 42, .22), inset 18px 14px 26px rgba(203, 226, 150, .18);
+  filter: drop-shadow(0 12px 12px rgba(45, 84, 42, .2));
+}
+#forestScene .tree-canopy::after {
+  content: '';
+  position: absolute;
+  inset: 12% 8% 4%;
+  background:
+    radial-gradient(ellipse at 25% 48%, rgba(183, 211, 124, .42) 0 8%, transparent 9%),
+    radial-gradient(ellipse at 52% 32%, rgba(202, 224, 143, .34) 0 7%, transparent 8%),
+    radial-gradient(ellipse at 73% 56%, rgba(177, 211, 116, .36) 0 9%, transparent 10%);
+}
+#forestScene .tree-canopy-left { left: -9vw; }
+#forestScene .tree-canopy-right { right: -9vw; transform: scaleX(-1); }
+
 /* 远山 */
 #forestScene .hills {
   position: absolute;
   left: 0; right: 0; bottom: 0;
   width: 100%; height: 30vh;
+  z-index: 0;
   pointer-events: none;
 }
+
+/* 前景草地明确承接灌木与动物，避免远山被误读成水面。 */
+#forestScene .forest-floor {
+  position: absolute;
+  left: -3%; right: -3%; bottom: -5vh;
+  height: 21vh;
+  z-index: 1;
+  border-radius: 52% 48% 0 0 / 26% 30% 0 0;
+  background:
+    radial-gradient(ellipse at 16% 5%, rgba(178, 207, 117, .65), transparent 18%),
+    radial-gradient(ellipse at 72% 8%, rgba(164, 197, 101, .5), transparent 22%),
+    linear-gradient(180deg, #6b9d50 0%, #4f7f40 72%, #426d38 100%);
+  box-shadow: inset 0 10px 18px rgba(207, 226, 143, .22), 0 -5px 18px rgba(55, 91, 47, .12);
+}
+#forestScene .forest-floor::before {
+  content: '';
+  position: absolute;
+  inset: 4% 4% auto;
+  height: 32%;
+  opacity: .5;
+  background:
+    radial-gradient(circle at 8% 44%, #dce99e 0 2px, transparent 3px),
+    radial-gradient(circle at 30% 28%, #c7df87 0 2px, transparent 3px),
+    radial-gradient(circle at 57% 58%, #dce99e 0 2px, transparent 3px),
+    radial-gradient(circle at 83% 30%, #c7df87 0 2px, transparent 3px);
+}
+#forestScene .forest-grass {
+  position: absolute;
+  width: 42px; height: 30px;
+  bottom: 70%;
+  background:
+    linear-gradient(72deg, transparent 44%, #3f7338 46% 53%, transparent 55%) 2px 7px / 16px 24px no-repeat,
+    linear-gradient(92deg, transparent 44%, #518a45 46% 53%, transparent 55%) 14px 0 / 15px 30px no-repeat,
+    linear-gradient(112deg, transparent 44%, #3f7338 46% 53%, transparent 55%) 25px 8px / 16px 23px no-repeat;
+}
+#forestScene .grass-a { left: 7%; }
+#forestScene .grass-b { left: 44%; transform: scale(.8); }
+#forestScene .grass-c { right: 9%; transform: scale(1.1); }
+#forestScene .forest-mushroom {
+  position: absolute;
+  bottom: 66%;
+  width: 16px; height: 14px;
+  border-radius: 55% 55% 25% 25%;
+  background: #d96d45;
+  box-shadow: inset 0 -4px rgba(132, 61, 37, .22);
+}
+#forestScene .forest-mushroom::after {
+  content: '';
+  position: absolute;
+  left: 6px; top: 10px;
+  width: 5px; height: 10px;
+  border-radius: 2px;
+  background: #f1dfb9;
+}
+#forestScene .mushroom-a { left: 17%; }
+#forestScene .mushroom-b { right: 19%; transform: scale(.76); }
 
 /* 林间雾气 */
 #forestScene .mist {
@@ -175,18 +262,19 @@ header, .status, .board { position: relative; z-index: 2; }
    ============================================================ */
 #forestScene .animal {
   position: absolute;
+  z-index: 3;
   pointer-events: auto;
   cursor: pointer;
 }
 #forestScene .animal svg { display: block; }
 /* 竖构图：树干上的动物 */
-#forestScene .animal-squirrel { left: 0;  top: 10%; height: 52%; }
-#forestScene .animal-deer     { right: 0; top: 30%; height: 46%; }
+#forestScene .animal-squirrel { left: -1.5vw; top: 0; height: 72vh; }
+#forestScene .animal-deer     { right: -1.5vw; top: 0; height: 72vh; }
 #forestScene .animal-squirrel svg,
 #forestScene .animal-deer svg     { height: 100%; width: auto; }
 /* 横构图：灌木中的兔子 / 树枝上的小鸟 */
-#forestScene .animal-rabbit { left: 0; bottom: 0; width: 34vw; max-width: 330px; }
-#forestScene .animal-bird   { right: 4%; top: 12%; width: 30vw; max-width: 290px; }
+#forestScene .animal-rabbit { left: 2.5%; bottom: 7vh; width: 23vw; max-width: 290px; }
+#forestScene .animal-bird   { right: 0; top: 11%; width: 31vw; max-width: 350px; }
 #forestScene .animal-rabbit svg,
 #forestScene .animal-bird svg     { width: 100%; height: auto; }
 
@@ -265,6 +353,17 @@ header, .status, .board { position: relative; z-index: 2; }
   #forestScene .leaf,
   #forestScene .mist,
   #forestScene .animal svg { animation: none !important; }
+}
+
+@media (max-width: 620px) {
+  #forestScene .tree-canopy { top: -5vh; width: 38vw; height: 22vh; }
+  #forestScene .tree-canopy-left { left: -12vw; }
+  #forestScene .tree-canopy-right { right: -12vw; }
+  #forestScene .animal-squirrel { left: -12vw; height: 42vh; opacity: .9; }
+  #forestScene .animal-deer { right: -12vw; height: 42vh; opacity: .9; }
+  #forestScene .animal-bird { display: none; }
+  #forestScene .animal-rabbit { left: -3%; bottom: 3vh; width: 34vw; }
+  #forestScene .forest-floor { height: 17vh; }
 }
 
 /* ============================================================

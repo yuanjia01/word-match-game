@@ -3,29 +3,34 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-<title>单词消消乐</title>
-<link rel="stylesheet" href="css/style.css" />
-<link rel="stylesheet" href="css/forest.css" />
+<title>词咔｜听准每个音，单词一拼就会</title>
+<link rel="stylesheet" href="css/style.css?v=20260820e" />
+<link rel="stylesheet" href="css/forest.css?v=20260820d" />
 </head>
 <body>
 <button id="soundBtn" aria-label="音效开关">音效 开</button>
 
-<!-- 主页：双玩法选择（阶段1·T2） -->
+<!-- 主页：先学习音标，再进入两种消消乐练习 -->
 <main id="screen-home" class="screen">
   <header>
-    <h1>单词消消乐</h1>
-    <p class="home-subtitle">选择一种玩法，开始挑战吧！</p>
+    <h1>词咔</h1>
+    <p class="home-subtitle">听准每个音，单词一拼就会</p>
   </header>
   <div class="mode-cards">
-    <button class="mode-card" id="modeWordBtn" aria-label="进入单词消消乐">
-      <span class="mode-emoji">A</span>
-      <span class="mode-name">单词消消乐</span>
-      <span class="mode-desc">中英单词配对 · 3-9 年级自选</span>
+    <button class="mode-card mode-card-learning" id="modeLearnBtn" aria-label="进入音标学习">
+      <span class="mode-emoji">L</span>
+      <span class="mode-name">音标学习</span>
+      <span class="mode-desc">零基础从这里开始 · 学音标 · 练听辨</span>
     </button>
     <button class="mode-card" id="modePhoneticBtn" aria-label="进入音标消消乐">
       <span class="mode-emoji">P</span>
       <span class="mode-name">音标消消乐</span>
-      <span class="mode-desc">国际音标配对消除</span>
+      <span class="mode-desc">学完后用配对消除巩固复习</span>
+    </button>
+    <button class="mode-card" id="modeWordBtn" aria-label="进入单词消消乐">
+      <span class="mode-emoji">A</span>
+      <span class="mode-name">单词消消乐</span>
+      <span class="mode-desc">中英单词配对 · 3-9 年级自选</span>
     </button>
   </div>
   <!-- 自定义词库入口（阶段1·T8 / AIL-14）：有自定义词库时显示词库切换，可进入导入页 -->
@@ -105,6 +110,57 @@
   </div>
 </main>
 
+<!-- 音标学习：卡片学习 -> 听音辨音 -> 本课消消乐测验 -->
+<main id="screen-learn" class="screen hidden">
+  <header>
+    <div class="game-top">
+      <button class="back-btn" id="phoneticLearnHomeBtn">返回主页</button>
+    </div>
+    <h1>音标学习</h1>
+    <p class="home-subtitle">英式发音 · 每课完成学习、听辨和消消乐测验</p>
+  </header>
+
+  <section id="phoneticLessonList" class="phonetic-learning-view">
+    <div class="phonetic-progress-card" aria-label="音标学习进度">
+      <span id="phoneticProgressText">已完成 0 / 7 课</span>
+      <div class="phonetic-progress-track"><span id="phoneticProgressBar"></span></div>
+    </div>
+    <div id="phoneticLessonGrid" class="phonetic-lesson-grid"></div>
+    <p id="phoneticLearningNotice" class="phonetic-learning-notice" aria-live="polite"></p>
+  </section>
+
+  <section id="phoneticLessonDetail" class="phonetic-learning-view hidden">
+    <div class="learning-section-head">
+      <button class="back-btn" id="phoneticLessonBackBtn">返回课程</button>
+      <div>
+        <h2 id="phoneticLessonTitle"></h2>
+        <p id="phoneticLessonDesc"></p>
+      </div>
+    </div>
+    <div id="phoneticStudyCards" class="phonetic-study-grid"></div>
+    <div class="phonetic-lesson-actions">
+      <p id="phoneticHeardProgress">已听 0 / 0 个音标</p>
+      <button id="phoneticStartQuizBtn" class="learning-primary-btn" disabled>听完本课音标后开始</button>
+    </div>
+  </section>
+
+  <section id="phoneticListeningQuiz" class="phonetic-learning-view hidden">
+    <div class="learning-section-head">
+      <button class="back-btn" id="phoneticQuizBackBtn">返回学习</button>
+      <div>
+        <h2>听音辨音</h2>
+        <p id="phoneticQuizCounter">第 1 / 5 题</p>
+      </div>
+    </div>
+    <div class="phonetic-quiz-card">
+      <button id="phoneticQuizAudioBtn" class="phonetic-audio-button" aria-label="再次播放音标">▶ 再听一次</button>
+      <p id="phoneticQuizFeedback" class="phonetic-quiz-feedback" aria-live="polite">听发音，选择对应的音标</p>
+      <div id="phoneticQuizOptions" class="phonetic-quiz-options"></div>
+      <button id="phoneticQuizActionBtn" class="learning-primary-btn hidden"></button>
+    </div>
+  </section>
+</main>
+
 <!-- 音标消消乐游戏页（AIL-9/T3：js/phonetic-game.js 逻辑，js/app.js 路由进入） -->
 <main id="screen-phonetic" class="screen hidden">
   <header>
@@ -112,6 +168,7 @@
       <button class="back-btn" id="phoneticBackBtn">返回主页</button>
     </div>
     <h1>音标消消乐</h1>
+    <p id="phoneticHint" class="home-subtitle">点击音标听标准音；点击单词逐音素拼读后合成整词</p>
   </header>
   <div class="status">
     <span id="phoneticRoundLabel">第 1 关</span>
@@ -154,16 +211,17 @@
 </main>
 
 <script src="js/data/words.js"></script>
-<script src="js/data/phonetics.js"></script>
+<script src="js/data/phonetics.js?v=20260820i"></script>
 <script src="js/data/grade-words.js"></script>
 <script src="js/data/user-words.js"></script>
 <script src="js/user-words.js"></script>
 <script src="js/match-core.js"></script>
 <script src="js/audio.js"></script>
-<script src="js/speech.js"></script>
+<script src="js/speech.js?v=20260820k"></script>
 <script src="js/match-game.js"></script>
-<script src="js/phonetic-game.js"></script>
+<script src="js/phonetic-game.js?v=20260820e"></script>
+<script src="js/phonetic-learning.js?v=20260820d"></script>
 <script src="js/app.js"></script>
-<script src="js/forest.js"></script>
+<script src="js/forest.js?v=20260820b"></script>
 </body>
 </html>
