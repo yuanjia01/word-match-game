@@ -1,89 +1,328 @@
-/* 朗读模块（原 index.html 迁移）：loadVoices / speak（Web Speech API）
-   阶段2·T6（AIL-12）：新增 speakPhonetic —— 音标玩法朗读音标，
-   读取 PHONETICS 数据里的示例词与中文描述
-   阶段2·修复：恢复有道发音兜底（原版 1aab6520 有，T0 重构时丢失）。
-   关键：iOS/微信内嵌浏览器 speechSynthesis 多静默失败，且音频播放必须发生在
-   用户点击手势内（setTimeout 回调中的 play() 会被拦截）。因此触摸设备直接走
-   有道发音（手势内播放），PC 走原生 TTS 并保留延迟实播检测兜底 */
+/* 英式发音模块：整词优先使用 en-GB / 有道英音，音标使用本地教学音频。
+   爆破音轻带 /ə/ 便于初学者辨音；双元音使用连续滑音，不从示例词截取。 */
 
 let voices = [];
+let speechRun = 0;
+let activeSegmentCleanup = null;
+let activePhonemeFinish = null;
+let activeWordFinish = null;
+const phonemePlayer = new Audio();
+phonemePlayer.preload = 'auto';
+const wordPlayer = new Audio();
+wordPlayer.preload = 'auto';
 
-/* 加载浏览器可用语音 */
 function loadVoices() { voices = speechSynthesis.getVoices(); }
 if ('speechSynthesis' in window) {
   loadVoices();
   speechSynthesis.onvoiceschanged = loadVoices;
 }
 
-/* 触摸设备判定（iOS/Android 手机平板；iPad 桌面 UA 也有 maxTouchPoints） */
 function isTouchDevice() {
   return ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 }
 
-/* 有道词典发音兜底（美音）：必须在用户手势内调用 play() 才不会被 iOS 拦截 */
-function youdaoSpeak(word) {
-  const a = new Audio('https://dict.youdao.com/dictvoice?type=2&audio=' + encodeURIComponent(word));
-  a.play().catch(function () {});
-  return a;
+function britishVoice() {
+  return voices.find(function (voice) {
+    return voice.lang.replace('_', '-').toLowerCase().startsWith('en-gb');
+  });
 }
 
-/* PC 端实播检测：speak 后 900ms 仍未发声则用有道兜底 */
-function ttsFallbackWatch(word) {
-  setTimeout(function () {
-    if (!speechSynthesis.speaking && !speechSynthesis.pending) youdaoSpeak(word);
-  }, 900);
+function youdaoBritishUrl(word) {
+  return 'https://dict.youdao.com/dictvoice?type=1&audio=' + encodeURIComponent(word);
 }
 
-/* 朗读英文单词（单词版现用逻辑）。触摸设备直接有道；PC 原生 TTS + 实播检测兜底 */
+function beginSpeechRun() {
+  speechRun++;
+  if (activeSegmentCleanup) activeSegmentCleanup();
+  if (activePhonemeFinish) activePhonemeFinish(false);
+  if (activeWordFinish) activeWordFinish(false);
+  phonemePlayer.pause();
+  phonemePlayer.removeAttribute('src');
+  wordPlayer.pause();
+  wordPlayer.removeAttribute('src');
+  if ('speechSynthesis' in window) speechSynthesis.cancel();
+  return speechRun;
+}
+
+function waitFor(ms, token) {
+  return new Promise(function (resolve) {
+    setTimeout(function () { resolve(token === speechRun); }, ms);
+  });
+}
+
+function playSource(src, rate, token) {
+  return new Promise(function (resolve) {
+    if (token !== speechRun) { resolve(false); return; }
+    var settled = false;
+    function finish(ok) {
+      if (settled) return;
+      settled = true;
+      if (activePhonemeFinish === finish) activePhonemeFinish = null;
+      phonemePlayer.onloadedmetadata = null;
+      phonemePlayer.ontimeupdate = null;
+      phonemePlayer.onended = null;
+      phonemePlayer.onerror = null;
+      resolve(ok && token === speechRun);
+    }
+    activePhonemeFinish = finish;
+    phonemePlayer.pause();
+    phonemePlayer.src = src;
+    phonemePlayer.currentTime = 0;
+    phonemePlayer.playbackRate = rate || 1;
+    phonemePlayer.onended = function () { finish(true); };
+    phonemePlayer.onerror = function () { finish(false); };
+    var started = phonemePlayer.play();
+    if (started && typeof started.catch === 'function') {
+      started.catch(function () { finish(false); });
+    }
+  });
+}
+
+async function playPhoneticItem(item, token) {
+  if (!item || !item.audio) return false;
+  for (var i = 0; i < item.audio.length; i++) {
+    if (token !== speechRun) return false;
+    var ok = await playSource('assets/audio/phonemes/' + item.audio[i] + '.mp3', item.rate || 1, token);
+    if (!ok) return false;
+    if (i < item.audio.length - 1) await waitFor(45, token);
+  }
+  return token === speechRun;
+}
+
+function speakWholeWord(word, token, options) {
+  options = options || {};
+  if (token !== speechRun) return Promise.resolve(false);
+  var rate = options.rate || 0.9;
+  var voice = britishVoice();
+
+  function playBritishRecording() {
+    if (typeof options.onStart === 'function') options.onStart();
+    return playSource(youdaoBritishUrl(word), rate, token).then(function (ok) {
+      if (typeof options.onEnd === 'function') options.onEnd();
+      return ok;
+    });
+  }
+
+  if (options.preferRecording || isTouchDevice() || !('speechSynthesis' in window) || !voice) {
+    return playBritishRecording();
+  }
+
+  var utterance = new SpeechSynthesisUtterance(word);
+  utterance.lang = 'en-GB';
+  utterance.rate = rate;
+  utterance.pitch = 1;
+  utterance.voice = voice;
+  var started = false;
+  return new Promise(function (resolve) {
+    var settled = false;
+    function finish(ok) {
+      if (settled) return;
+      settled = true;
+      if (typeof options.onEnd === 'function') options.onEnd();
+      resolve(ok && token === speechRun);
+    }
+    function fallback() {
+      if (settled || token !== speechRun) { finish(false); return; }
+      settled = true;
+      playBritishRecording().then(resolve);
+    }
+    utterance.onstart = function () {
+      started = true;
+      if (typeof options.onStart === 'function') options.onStart();
+    };
+    utterance.onend = function () { finish(true); };
+    utterance.onerror = fallback;
+    speechSynthesis.speak(utterance);
+    setTimeout(function () {
+      if (!started && !settled && token === speechRun && !speechSynthesis.speaking && !speechSynthesis.pending) {
+        fallback();
+      }
+    }, 900);
+  });
+}
+
+var MONOPHTHONG_SYMBOLS = ['iː', 'ɪ', 'e', 'æ', 'ɑː', 'ɒ', 'ɔː', 'ʊ', 'uː', 'ʌ', 'ɜː', 'ə'];
+var DIPHTHONG_SYMBOLS = ['eɪ', 'aɪ', 'ɔɪ', 'aʊ', 'əʊ', 'ɪə', 'eə', 'ʊə'];
+var VOWEL_SYMBOLS = MONOPHTHONG_SYMBOLS.concat(DIPHTHONG_SYMBOLS);
+var STOP_SYMBOLS = ['p', 'b', 't', 'd', 'k', 'g'];
+var TEACHING_AUDIO = {
+  'p': 'p', 'b': 'b', 't': 't', 'd': 'd', 'k': 'k', 'g': 'g',
+  'f': 'pure-f', 'v': 'pure-v', 'θ': 'theta', 'ð': 'pure-eth',
+  's': 'pure-s', 'z': 'pure-z', 'ʃ': 'sh', 'ʒ': 'pure-zh', 'h': 'pure-h',
+  'tʃ': 'aff-ch', 'dʒ': 'aff-j', 'm': 'pure-m', 'n': 'pure-n', 'ŋ': 'pure-eng',
+  'l': 'pure-l', 'r': 'pure-r', 'w': 'pure-w', 'j': 'pure-y',
+  'eɪ': 'diph-ei', 'aɪ': 'diph-ai', 'ɔɪ': 'diph-oi', 'aʊ': 'diph-au',
+  'əʊ': 'diph-ou', 'ɪə': 'diph-ia', 'eə': 'diph-ea', 'ʊə': 'diph-ua'
+};
+
+function phoneticItem(symbol) {
+  if (typeof PHONETICS === 'undefined') return null;
+  return PHONETICS.find(function (entry) { return entry.symbol === symbol; });
+}
+
+function teachingAudioSource(symbol) {
+  var name = TEACHING_AUDIO[symbol];
+  return name ? 'assets/audio/teaching/' + name + '.wav' : '';
+}
+
+function segmentWeight(symbol) {
+  if (VOWEL_SYMBOLS.indexOf(symbol) !== -1) return 1.6;
+  if (STOP_SYMBOLS.indexOf(symbol) !== -1) return 0.65;
+  return 1;
+}
+
+function segmentBoundaries(item) {
+  var weights = item.segments.map(segmentWeight);
+  var total = weights.reduce(function (sum, weight) { return sum + weight; }, 0);
+  var elapsed = 0;
+  return [0].concat(weights.map(function (weight) {
+    elapsed += weight;
+    return elapsed / total;
+  }));
+}
+
+function wordSegmentRange(item, index) {
+  var boundaries = segmentBoundaries(item);
+  var clipStart = item.clip[0];
+  var clipEnd = item.clip[1];
+  var speechLength = clipEnd - clipStart;
+  return {
+    start: clipStart + speechLength * boundaries[index],
+    end: clipStart + speechLength * boundaries[index + 1]
+  };
+}
+
+function prepareWordSource(src, token) {
+  return new Promise(function (resolve) {
+    if (token !== speechRun) { resolve(0); return; }
+    var settled = false;
+
+    function finish(duration) {
+      if (settled) return;
+      settled = true;
+      if (activeWordFinish === finish) activeWordFinish = null;
+      wordPlayer.onloadedmetadata = null;
+      wordPlayer.onerror = null;
+      resolve(token === speechRun ? duration : 0);
+    }
+    activeWordFinish = finish;
+    wordPlayer.pause();
+    wordPlayer.onloadedmetadata = function () {
+      finish(Number.isFinite(wordPlayer.duration) ? wordPlayer.duration : 0);
+    };
+    wordPlayer.onerror = function () { finish(0); };
+    wordPlayer.src = src;
+    wordPlayer.currentTime = 0;
+    wordPlayer.load();
+  });
+}
+
+function playLoadedWordRange(rangeStart, rangeEnd, rate, duration, token) {
+  return new Promise(function (resolve) {
+    if (token !== speechRun) { resolve(false); return; }
+    var settled = false;
+    var timer = null;
+    var startAt = Math.max(0, rangeStart - 0.012);
+    var endAt = Math.min(duration, rangeEnd + 0.012);
+
+    function finish(ok) {
+      if (settled) return;
+      settled = true;
+      if (activeWordFinish === finish) activeWordFinish = null;
+      clearInterval(timer);
+      wordPlayer.pause();
+      wordPlayer.onended = null;
+      wordPlayer.onerror = null;
+      resolve(ok && token === speechRun);
+    }
+    activeWordFinish = finish;
+    function watchRange() {
+      if (token !== speechRun) { finish(false); return; }
+      if (wordPlayer.currentTime >= endAt - 0.008) finish(true);
+    }
+
+    wordPlayer.currentTime = startAt;
+    wordPlayer.playbackRate = rate;
+    wordPlayer.onended = function () { finish(true); };
+    wordPlayer.onerror = function () { finish(false); };
+    timer = setInterval(watchRange, 12);
+    var started = wordPlayer.play();
+    if (started && typeof started.catch === 'function') {
+      started.catch(function () { finish(false); });
+    }
+  });
+}
+
+/* 单词消消乐使用的整词朗读。 */
 function speak(word) {
-  if (isTouchDevice() || !('speechSynthesis' in window)) {
-    youdaoSpeak(word);
-    return;
-  }
-  speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(word);
-  u.lang = 'en-US';
-  u.rate = 0.95;
-  u.pitch = 1.05;
-  const v = voices.find(v => v.lang.replace('_', '-').toLowerCase().startsWith('en'));
-  if (v) u.voice = v;
-  speechSynthesis.speak(u);
-  ttsFallbackWatch(word);
+  var token = beginSpeechRun();
+  speakWholeWord(word, token);
 }
 
-/* 朗读音标（音标版）：只朗读音标本身的发音，不读示例词（避免泄露答案）。
-   用 PHONETICS 数据里的 sound 字段（音素的近似拼读，如 i: → "ee"）做英文朗读，
-   再读中文描述（如"长音 i"）；找不到对应词条则直接读符号文本兜底 */
+/* 点按单个音标时，辅音与双元音使用独立教学录音，单元音使用标准 IPA 录音。 */
 function speakPhonetic(symbol) {
-  let item = null;
-  if (typeof PHONETICS !== 'undefined') {
-    item = PHONETICS.find(p => p.symbol === symbol);
-  }
-  if (!item) { speak(symbol); return; }
-  if (isTouchDevice() || !('speechSynthesis' in window)) {
-    /* 触摸设备：有道读音素近似拼读（如 "ee"），中文描述有道不支持则跳过 */
-    youdaoSpeak(item.sound);
-    return;
-  }
-  speechSynthesis.cancel();
-  /* 音素近似拼读 · 英文朗读（仅音素本身，不含示例词） */
-  const uEn = new SpeechSynthesisUtterance(item.sound);
-  uEn.lang = 'en-US';
-  uEn.rate = 0.8;
-  uEn.pitch = 1.0;
-  const vEn = voices.find(v => v.lang.replace('_', '-').toLowerCase().startsWith('en'));
-  if (vEn) uEn.voice = vEn;
-  speechSynthesis.speak(uEn);
-  /* 中文描述 · 中文朗读 */
-  const uZh = new SpeechSynthesisUtterance(item.cn);
-  uZh.lang = 'zh-CN';
-  uZh.rate = 0.9;
-  uZh.pitch = 1.1;
-  const vZh = voices.find(v => v.lang.replace('_', '-').toLowerCase().startsWith('zh'));
-  if (vZh) uZh.voice = vZh;
-  speechSynthesis.speak(uZh);
-  /* PC 实播检测：900ms 未发声则降级为有道读音素拼读 */
-  setTimeout(function () {
-    if (!speechSynthesis.speaking && !speechSynthesis.pending) youdaoSpeak(item.sound);
-  }, 900);
+  var item = phoneticItem(symbol);
+  if (!item) return Promise.resolve(false);
+  var token = beginSpeechRun();
+  var teachingSource = teachingAudioSource(symbol);
+  return teachingSource ? playSource(teachingSource, 1, token) : playPhoneticItem(item, token);
 }
+
+/* 辅音与双元音播放独立教学录音，单元音播放标准 IPA 录音；
+   依次拼读后再播放完整单词。
+   onSegment(index, symbol) 用于高亮；-2 表示合成整词，-1 表示播放结束。 */
+function speakPhoneticWord(item, onSegment) {
+  if (!item || !item.segments || !item.clip) return Promise.resolve(false);
+  var token = beginSpeechRun();
+  var segmentRate = 0.88;
+  var segmentGap = 130;
+  var blendGap = 280;
+  var cleaned = false;
+  var wordReady = prepareWordSource(youdaoBritishUrl(item.example), token);
+
+  function cleanup() {
+    if (cleaned) return;
+    cleaned = true;
+    if (typeof onSegment === 'function') onSegment(-1, '');
+    if (activeSegmentCleanup === cleanup) activeSegmentCleanup = null;
+  }
+  activeSegmentCleanup = cleanup;
+  if (typeof onSegment === 'function') onSegment(0, item.segments[0]);
+
+  return (async function () {
+    var duration = 0;
+
+    for (var i = 0; i < item.segments.length; i++) {
+      var symbol = item.segments[i];
+      if (i > 0 && typeof onSegment === 'function') onSegment(i, symbol);
+      var teachingSource = teachingAudioSource(symbol);
+      var segmentItem = phoneticItem(symbol);
+      var ok;
+      if (teachingSource) {
+        ok = await playSource(teachingSource, 1, token);
+      } else if (MONOPHTHONG_SYMBOLS.indexOf(symbol) !== -1 && segmentItem) {
+        ok = await playPhoneticItem(segmentItem, token);
+      } else {
+        if (!duration) duration = await wordReady;
+        if (!duration) { cleanup(); return false; }
+        var range = wordSegmentRange(item, i);
+        ok = await playLoadedWordRange(range.start, range.end, segmentRate, duration, token);
+      }
+      if (!ok) { cleanup(); return false; }
+      if (i < item.segments.length - 1 && !await waitFor(segmentGap, token)) {
+        cleanup();
+        return false;
+      }
+    }
+
+    if (!await waitFor(blendGap, token)) { cleanup(); return false; }
+    if (typeof onSegment === 'function') onSegment(-2, '');
+    if (!duration) duration = await wordReady;
+    if (!duration) { cleanup(); return false; }
+    var blended = await playLoadedWordRange(item.clip[0], item.clip[1], 1, duration, token);
+    cleanup();
+    return blended;
+  })();
+}
+
+window.speakPhoneticWord = speakPhoneticWord;

@@ -9,6 +9,7 @@
     mode: document.getElementById('screen-mode'),
     grade: document.getElementById('screen-grade'),
     word: document.getElementById('screen-word'),
+    learn: document.getElementById('screen-learn'),
     phonetic: document.getElementById('screen-phonetic'),
     import: document.getElementById('screen-import')
   };
@@ -251,6 +252,13 @@
     }
   }
 
+  /* 进入音标学习闭环：课程列表 -> 卡片 -> 听辨 -> 本课消消乐。 */
+  function enterPhoneticLearning() {
+    window.phoneticLessonActive = false;
+    showScreen('learn');
+    if (typeof window.initPhoneticLearning === 'function') window.initPhoneticLearning();
+  }
+
   /* 选择玩法后先进入模式选择页（T7/AIL-13） */
   function chooseGame(game) {
     pendingGame = game;
@@ -282,6 +290,19 @@
     showScreen('home');
   }
 
+  window.openPhoneticLessonTest = function (lesson) {
+    showScreen('phonetic');
+    if (typeof window.startPhoneticLessonTest === 'function') {
+      window.startPhoneticLessonTest(lesson);
+    }
+  };
+
+  window.returnToPhoneticLearning = function () {
+    if (typeof window.stopPhoneticTimer === 'function') window.stopPhoneticTimer();
+    showScreen('learn');
+    if (typeof window.resumePhoneticLearning === 'function') window.resumePhoneticLearning();
+  };
+
   /* 事件绑定 */
   document.getElementById('modeWordBtn').addEventListener('click', function () {
     chooseGame('word');
@@ -289,6 +310,7 @@
   document.getElementById('modePhoneticBtn').addEventListener('click', function () {
     chooseGame('phonetic');
   });
+  document.getElementById('modeLearnBtn').addEventListener('click', enterPhoneticLearning);
   document.getElementById('modeEasyBtn').addEventListener('click', function () {
     chooseMode('easy');
   });
@@ -300,7 +322,11 @@
     showScreen('mode');
   });
   document.getElementById('wordBackBtn').addEventListener('click', goHome);
-  document.getElementById('phoneticBackBtn').addEventListener('click', goHome);
+  document.getElementById('phoneticLearnHomeBtn').addEventListener('click', goHome);
+  document.getElementById('phoneticBackBtn').addEventListener('click', function () {
+    if (window.phoneticLessonActive) window.returnToPhoneticLearning();
+    else goHome();
+  });
   document.getElementById('importBackBtn').addEventListener('click', goHome);
 
   /* 词库来源切换（T8/AIL-14） */

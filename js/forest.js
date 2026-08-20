@@ -51,6 +51,11 @@
     '      <stop offset="0" stop-color="#241408"/><stop offset="1" stop-color="#100a05"/>' +
     '    </radialGradient>' +
     '  </defs>' +
+    '  <g stroke="url(#fsBarkL)" stroke-linecap="round" fill="none">' +
+    '    <path d="M92 112 Q64 70 18 48" stroke-width="24"/>' +
+    '    <path d="M122 118 Q160 76 208 54" stroke-width="21"/>' +
+    '    <path d="M76 88 Q54 55 42 24" stroke-width="12"/>' +
+    '  </g>' +
     '  <rect x="18" y="-30" width="160" height="620" rx="20" fill="url(#fsBarkL)"/>' +
     '  <path d="M38 -20 v600 M62 -20 v600 M88 -20 v600 M114 -20 v600 M140 -20 v600 M158 -20 v600" stroke="#4e3118" stroke-width="2" opacity=".45" fill="none"/>' +
     '  <path d="M28 80 q30 -14 60 4 M30 180 q26 10 52 -6 M34 430 q30 -12 60 2" stroke="#4e3118" stroke-width="3" opacity=".5" fill="none"/>' +
@@ -87,6 +92,11 @@
     '      <stop offset="0" stop-color="#b0703a"/><stop offset="1" stop-color="#94592a"/>' +
     '    </linearGradient>' +
     '  </defs>' +
+    '  <g stroke="url(#fsBarkR)" stroke-linecap="round" fill="none">' +
+    '    <path d="M130 112 Q92 72 34 50" stroke-width="23"/>' +
+    '    <path d="M156 104 Q186 70 216 46" stroke-width="19"/>' +
+    '    <path d="M112 84 Q92 48 78 20" stroke-width="12"/>' +
+    '  </g>' +
     '  <rect x="34" y="250" width="58" height="230" rx="24" fill="url(#fsDeer)"/>' +
     '  <g stroke="#7a4a24" stroke-width="7" stroke-linecap="round" fill="none">' +
     '    <path d="M40 208 Q32 168 22 140"/>' +
@@ -173,11 +183,20 @@
 
   scene.innerHTML = [
     '<div class="forest-sun"></div>',
+    '<div class="tree-canopy tree-canopy-left"></div>',
+    '<div class="tree-canopy tree-canopy-right"></div>',
     '<svg class="hills" viewBox="0 0 1200 260" preserveAspectRatio="none">' +
       '<path d="M0 260 V150 Q 200 60 420 140 T 900 118 T 1200 150 V260 Z" fill="#7fae6b" opacity=".5"/>' +
       '<path d="M0 260 V192 Q 300 92 700 170 T 1200 170 V260 Z" fill="#5e9452" opacity=".55"/>' +
       '<path d="M0 260 V222 Q 400 150 800 210 T 1200 205 V260 Z" fill="#477a44" opacity=".65"/>' +
     '</svg>',
+    '<div class="forest-floor">' +
+      '<span class="forest-grass grass-a"></span>' +
+      '<span class="forest-grass grass-b"></span>' +
+      '<span class="forest-grass grass-c"></span>' +
+      '<span class="forest-mushroom mushroom-a"></span>' +
+      '<span class="forest-mushroom mushroom-b"></span>' +
+    '</div>',
     '<div class="mist mist-1"></div>',
     '<div class="mist mist-2"></div>',
     '<span class="leaf leaf-1"></span>',
